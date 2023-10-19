@@ -1,76 +1,76 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Dve Nedelje</title>
-  <style>
-    body {
-      font-family: 'Segoe UI Light','Segoe UI',Tahoma,Helvetica,Sans-Serif,sans-serif;
-      font-size: 12px;
-    }
-    h5 {
-      font-size: 14px;
-      margin-top: 10px;
-      margin-bottom: 3px;
-    }
-  </style>
+    <title>Dve Nedelje</title>
+    <style>
+        body {
+            font-family: 'Segoe UI Light', 'Segoe UI', Tahoma, Helvetica, Sans-Serif, sans-serif;
+            font-size: 12px;
+        }
+
+        h5 {
+            font-size: 14px;
+            margin-top: 10px;
+            margin-bottom: 3px;
+        }
+    </style>
 </head>
 <body>
-  <h5 id="firstWeekTitle">&nbsp;</h5>
-  <div id="firstWeek"></div>
+<h5 id="firstWeekTitle">1.</h5>
+<div id="firstWeek"></div>
 
-  <h5 id="secondWeekTitle">&nbsp;</h5>
-  <div id="secondWeek"></div>
+<h5 id="secondWeekTitle">2.</h5>
+<div id="secondWeek"></div>
 
-  <script>
+<script>
     function generateWeeks(selector, teamMembers, isActiveWeek) {
-      const daysOfWeek = ["Mon", "Tue", "Wed", "Thu", "Fri"];
-      const today = new Date().getDay();
+        const daysOfWeek = ["Mon", "Tue", "Wed", "Thu", "Fri"];
+        const today = new Date().getDay();
 
-      for (let i = 0; i < daysOfWeek.length; i++) {
-        let text = daysOfWeek[i];
-        
-        if (teamMembers && teamMembers[i]) {
-          text += ` - ${teamMembers[i]}`;
-        }
+        for (let i = 0; i < daysOfWeek.length; i++) {
+            let text = daysOfWeek[i];
 
-        if (isActiveWeek && today === (i + 1)) {
-          document.querySelector(selector).innerHTML += `<b>${text}</b><br>`;
-        } else {
-          document.querySelector(selector).innerHTML += `${text}<br>`;
+            if (teamMembers && teamMembers[i]) {
+                text += ` - ${teamMembers[i]}`;
+            }
+
+            if (isActiveWeek && today === (i + 1)) {
+                document.querySelector(selector).innerHTML += `<b>${text}</b><br>`;
+            } else {
+                document.querySelector(selector).innerHTML += `${text}<br>`;
+            }
         }
-      }
     }
 
     function updateTitleWithWeekNumber(selector, firstDay, isActiveWeek) {
-      const lastDay = addDays(firstDay, 4);
-      const titleElement = document.querySelector(selector);
-      titleElement.style.fontWeight = isActiveWeek ? 'bold' : 'normal';
-      titleElement.innerHTML = `Week ${formatDate(firstDay)}-${formatDate(lastDay)}:`;
+        const lastDay = addDays(firstDay, 4);
+        const titleElement = document.querySelector(selector);
+        titleElement.style.fontWeight = isActiveWeek ? 'bold' : 'normal';
+        titleElement.innerHTML += `Week ${formatDate(firstDay)}-${formatDate(lastDay)}:`;
     }
-  
-    
+
     function getMonday(d) {
-      const day = d.getDay();
-      const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-      return new Date(d.setDate(diff));
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+        return new Date(d.setDate(diff));
     }
 
     function formatDate(date) {
-      return `${date.getDate()}.${date.getMonth() + 1}`;
+        return `${date.getDate()}.${date.getMonth() + 1}`;
     }
-    
+
     function CurrentWeekNumber(date) {
-      return Math.ceil((date - new Date(date.getFullYear(), 0, 1)) / 604800000);
+        return Math.ceil((date - new Date(date.getFullYear(), 0, 1)) / 604800000);
     }
-    
+
     function IsFirstWeekCurrentWeek(date) {
-      return CurrentWeekNumber(date) % 2 === 0;
+        return CurrentWeekNumber(date) % 2 === 0;
     }
 
     function addDays(date, days) {
-      const newDate = new Date(date);
-      newDate.setDate(newDate.getDate() + days);
-      return newDate;
+        const newDate = new Date(date);
+        newDate.setDate(newDate.getDate() + days);
+        return newDate;
     }
 
     const today = new Date();
@@ -86,9 +86,9 @@
     const thisMonday = getMonday(today);
     const firstMonday = isFirstWeekCurrentWeek ? new Date(thisMonday) : addDays(thisMonday, -7);
     const secondMonday = isSecondWeekCurrentWeek ? new Date(thisMonday) : addDays(thisMonday, 7)
-    
+
     updateTitleWithWeekNumber("#firstWeekTitle", firstMonday, isFirstWeekCurrentWeek);
     updateTitleWithWeekNumber("#secondWeekTitle", secondMonday, isSecondWeekCurrentWeek);
-  </script>
+</script>
 </body>
 </html>
