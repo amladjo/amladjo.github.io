@@ -43,10 +43,9 @@
 
     function updateTitleWithWeekNumber(selector, firstDay, isActiveWeek) {
       const lastDay = addDays(firstDay, 4);
-      const weekNumber = CurrentWeekNumber(firstDay);
       const titleElement = document.querySelector(selector);
       titleElement.style.fontWeight = isActiveWeek ? 'bold' : 'normal';
-      titleElement.innerHTML = `Week ${formatDate(firstDay)}-${formatDate(lastDay)} (${weekNumber}):`;
+      titleElement.innerHTML = `Week ${formatDate(firstDay)}-${formatDate(lastDay)}:`;
     }
   
     
