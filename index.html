@@ -1,0 +1,25 @@
+<html>
+<body>
+    <script>
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - 7); // Početak prve nedelje
+
+        const endDate = new Date();
+        endDate.setDate(endDate.getDate() + 7); // Kraj druge nedelje
+
+        let currentDate = new Date(startDate);
+        while (currentDate <= endDate) {
+            const isToday = currentDate.toDateString() === new Date().toDateString();
+            const dateStr = currentDate.toISOString().slice(0, 10);
+            
+            if (isToday) {
+                document.write(`<b>${dateStr}</b><br>`);
+            } else {
+                document.write(`${dateStr}<br>`);
+            }
+
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+    </script>
+</body>
+</html>
