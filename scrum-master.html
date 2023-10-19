@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Dve Nedelje</title>
+</head>
+<body>
+  <h1>Neparne Nedelje</h1>
+  <div id="neparneNedelje"></div>
+
+  <h1>Parne Nedelje</h1>
+  <div id="parneNedelje"></div>
+
+  <script>
+    function generateWeeks(selector, isEvenWeek) {
+      const currentWeekNumber = Math.ceil((new Date() - new Date(new Date().getFullYear(), 0, 1)) / 604800000);
+      const currentDate = new Date();
+      
+      if ((currentWeekNumber % 2 === 0) === isEvenWeek) {
+        let day = currentDate.getDay();
+        
+        for (let i = 1; i <= 5; i++) {
+          const newDate = new Date(currentDate);
+          newDate.setDate(newDate.getDate() - day + i);
+          
+          const dateStr = newDate.toISOString().slice(0, 10);
+          
+          if (i === day) {
+            document.querySelector(selector).innerHTML += `<b>${dateStr}</b><br>`;
+          } else {
+            document.querySelector(selector).innerHTML += `${dateStr}<br>`;
+          }
+        }
+      }
+    }
+    
+    generateWeeks("#neparneNedelje", false);
+    generateWeeks("#parneNedelje", true);
+  </script>
+</body>
+</html>
