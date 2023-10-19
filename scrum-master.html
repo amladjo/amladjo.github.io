@@ -16,14 +16,14 @@
 </head>
 <body>
   <h5>Prva Nedelja</h5>
-  <div id="prvaNedelja"></div>
+  <div id="firstWeek"></div>
 
   <h5>Druga Nedelja</h5>
-  <div id="drugaNedelja"></div>
+  <div id="secondWeek"></div>
 
   <script>
     function generateWeeks(selector, teamMembers, isBoldWeek) {
-      const daysOfWeek = ["Ponedeljak", "Utorak", "Sreda", "Četvrtak", "Petak"];
+      const daysOfWeek = ["Mon", "Tue", "Wed", "Thr", "Fri"];
       const today = new Date().getDay();
 
       for (let i = 0; i < daysOfWeek.length; i++) {
@@ -44,11 +44,11 @@
     const currentWeekNumber = Math.ceil((new Date() - new Date(new Date().getFullYear(), 0, 1)) / 604800000);
     const isEvenWeek = currentWeekNumber % 2 === 0;
 
-    const firstWeekTeamMembers = ["Đilas", "Jokić", "Lukić", "Siniša", "Nemanja"];
-    const secondWeekTeamMembers = ["Radovan", "Stojanović", "Mladen", "Stojanović", "Mladen"];
+    const firstWeekTeamMembers = ["Srđan Đilas", "Srđan Jokić", "Milan Lukić", "Siniša Radin", "Nemanja Svorcan"];
+    const secondWeekTeamMembers = ["Radovan Škorić", "Milan Stojanović", "Mladen Arbutina", "Milan Stojanović", "Mladen Arbutina"];
 
-    generateWeeks("#prvaNedelja", firstWeekTeamMembers, isEvenWeek);
-    generateWeeks("#drugaNedelja", secondWeekTeamMembers, !isEvenWeek);
+    generateWeeks("#firstWeek", firstWeekTeamMembers, isEvenWeek);
+    generateWeeks("#secondWeek", secondWeekTeamMembers, !isEvenWeek);
   </script>
 </body>
 </html>
