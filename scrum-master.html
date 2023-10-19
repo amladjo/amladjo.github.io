@@ -4,7 +4,7 @@
   <title>Dve Nedelje</title>
   <style>
     body {
-      font-family: 'Segoe UI Light','Segoe UI',Tahoma,Helvetica,Sans-Serif;
+      font-family: 'Segoe UI Light','Segoe UI',Tahoma,Helvetica,Sans-Serif,sans-serif;
       font-size: 12px;
     }
     h5 {
@@ -15,15 +15,15 @@
   </style>
 </head>
 <body>
-  <h5>Prva Nedelja</h5>
+  <h5>First Week:</h5>
   <div id="firstWeek"></div>
 
-  <h5>Druga Nedelja</h5>
+  <h5>Second Week:</h5>
   <div id="secondWeek"></div>
 
   <script>
     function generateWeeks(selector, teamMembers, isBoldWeek) {
-      const daysOfWeek = ["Mon", "Tue", "Wed", "Thr", "Fri"];
+      const daysOfWeek = ["Mon", "Tue", "Wed", "Thu", "Fri"];
       const today = new Date().getDay();
 
       for (let i = 0; i < daysOfWeek.length; i++) {
