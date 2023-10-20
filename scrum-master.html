@@ -16,7 +16,8 @@
     </style>
 </head>
 <body>
-<h5 id="today" style="font-weight: 600;"></h5>
+<h2>Scrum Master</h2>
+<div id="today" style="font-weight: 600;"></div>
 <h5 id="firstWeekTitle">1.</h5>
 <div id="firstWeek"></div>
 
@@ -52,7 +53,7 @@
     
     function updateToday(date) {
         const todayElement = document.querySelector("#today");
-        todayElement.innerHTML = `${formatDate(date)}.${date.getFullYear()} - ${getDayOfWeek(date.getDay()-1)}`;
+        todayElement.innerHTML = `${formatDate(date)}.${date.getFullYear()} - ${getDayOfWeek((date.getDay()+6)%7)}`;
     }
 
     function getMonday(d) {
