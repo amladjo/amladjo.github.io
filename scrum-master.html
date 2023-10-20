@@ -16,6 +16,7 @@
     </style>
 </head>
 <body>
+<h5 id="today"></h5>
 <h5 id="firstWeekTitle">1.</h5>
 <div id="firstWeek"></div>
 
@@ -23,21 +24,21 @@
 <div id="secondWeek"></div>
 
 <script>
-    function generateWeeks(selector, teamMembers, isActiveWeek) {
-        const daysOfWeek = ["Mon", "Tue", "Wed", "Thu", "Fri"];
-        const today = new Date().getDay();
+    function generateWeeks(selector, teamMembers, today, isActiveWeek) {
+        const todayDay = today.getDay();
+        const dayElement = document.querySelector(selector);
 
-        for (let i = 0; i < daysOfWeek.length; i++) {
-            let text = daysOfWeek[i];
+        for (let i = 0; i < daysOfWeek().length - 2; i++) {
+            let text = getDayOfWeek(i);
 
             if (teamMembers && teamMembers[i]) {
                 text += ` - ${teamMembers[i]}`;
             }
 
-            if (isActiveWeek && today === (i + 1)) {
-                document.querySelector(selector).innerHTML += `<b>${text}</b><br>`;
+            if (isActiveWeek && todayDay === (i + 1)) {
+                dayElement.innerHTML += `<b>${text}</b><br>`;
             } else {
-                document.querySelector(selector).innerHTML += `${text}<br>`;
+                dayElement.innerHTML += `${text}<br>`;
             }
         }
     }
@@ -47,6 +48,11 @@
         const titleElement = document.querySelector(selector);
         titleElement.style.fontWeight = isActiveWeek ? 'bold' : 'normal';
         titleElement.innerHTML += `Week ${formatDate(firstDay)}-${formatDate(lastDay)}:`;
+    }
+    
+    function updateToday(date) {
+        const todayElement = document.querySelector("#today");
+        todayElement.innerHTML = `${formatDate(date)}.${date.getFullYear()} (${getDayOfWeek(date.getDay()-1)})`;
     }
 
     function getMonday(d) {
@@ -72,16 +78,26 @@
         newDate.setDate(newDate.getDate() + days);
         return newDate;
     }
+    
+    function getDayOfWeek(day) {
+        return daysOfWeek()[day];
+    }
+    
+    function daysOfWeek() {
+        return ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    }
 
-    const today = new Date();
+    const today = addDays(new Date(), 0);
+    updateToday(today);
+
     const isFirstWeekCurrentWeek = IsFirstWeekCurrentWeek(today);
     const isSecondWeekCurrentWeek = !isFirstWeekCurrentWeek;
 
     const firstWeekTeamMembers = ["Srđan Đilas", "Srđan Jokić", "Milan Lukić", "Siniša Radin", "Nemanja Svorcan"];
     const secondWeekTeamMembers = ["Radovan Škorić", "Milan Stojanović", "Mladen Arbutina", "Milan Stojanović", "Mladen Arbutina"];
 
-    generateWeeks("#firstWeek", firstWeekTeamMembers, isFirstWeekCurrentWeek);
-    generateWeeks("#secondWeek", secondWeekTeamMembers, isSecondWeekCurrentWeek);
+    generateWeeks("#firstWeek", firstWeekTeamMembers, today, isFirstWeekCurrentWeek);
+    generateWeeks("#secondWeek", secondWeekTeamMembers, today, isSecondWeekCurrentWeek);
 
     const thisMonday = getMonday(today);
     const firstMonday = isFirstWeekCurrentWeek ? new Date(thisMonday) : addDays(thisMonday, -7);
