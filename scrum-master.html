@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Dve Nedelje</title>
+    <title>Scrum Master</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Helvetica, Sans-Serif, sans-serif;
@@ -16,7 +16,7 @@
     </style>
 </head>
 <body>
-<h5 id="today"></h5>
+<h5 id="today" style="font-weight: 600;"></h5>
 <h5 id="firstWeekTitle">1.</h5>
 <div id="firstWeek"></div>
 
@@ -36,7 +36,7 @@
             }
 
             if (isActiveWeek && todayDay === (i + 1)) {
-                text = `<b>${text}</b>`;
+                text = `<b style="color: darkgreen; font-weight: 900;">${text}</b>`;
             }
 
             dayElement.innerHTML += `${text}<br>`;
