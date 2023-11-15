@@ -65,12 +65,12 @@
         return `${date.getDate()}.${date.getMonth() + 1}`;
     }
 
-    function CurrentWeekNumber(date) {
-        return Math.ceil((date - new Date(date.getFullYear(), 0, 1)) / 604800000);
+    function CurrentWeekNumberFromFixedDate(date) {
+        return Math.ceil((date - new Date(2023, 0, 1)) / 604800000);
     }
-
+    
     function IsFirstWeekCurrentWeek(date) {
-        return CurrentWeekNumber(date) % 2 === 0;
+        return CurrentWeekNumberFromFixedDate(date) % 2 === 0;
     }
 
     function addDays(date, days) {
