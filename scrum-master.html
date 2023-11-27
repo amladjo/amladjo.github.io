@@ -24,14 +24,34 @@
 <div id="secondWeek"></div>
 
 <script>
+    const specialDays = [
+        {
+            start: new Date(2023, 11, 4),
+            end: new Date(2023, 11, 8),
+            scrumMaster: "Radovan Škorić"
+        },
+    ];
+
+    function isSpecialDay(date) {
+        for (let day of specialDays) {
+            if (date >= day.start && date <= day.end) {
+                return day.scrumMaster;
+            }
+        }
+        return null;
+    }
+    
     function generateWeeks(selector, teamMembers, today, isActiveWeek) {
         const todayDay = today.getDay();
         const dayElement = document.querySelector(selector);
+        const specialScrumMaster = isSpecialDay(today);
 
         for (let i = 0; i < daysOfWeek().length - 2; i++) {
             let text = getDayOfWeek(i).substring(0, 3);
 
-            if (teamMembers && teamMembers[i]) {
+            if (specialScrumMaster) {
+                text += ` - ${specialScrumMaster}`;
+            } else if (teamMembers && teamMembers[i]) {
                 text += ` - ${teamMembers[i]}`;
             }
 
