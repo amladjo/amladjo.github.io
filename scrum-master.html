@@ -13,44 +13,158 @@
 			margin-top: 10px;
 			margin-bottom: 3px;
 		}
+		tr td:first-child {
+			text-align: center;
+		}
+
+		.normal {
+		}
+
+		.current {
+			font-weight: bold;
+		}
+
+		.completed {
+			text-decoration: line-through;
+			color: grey;
+		}
 	</style>
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
 </head>
 <body>
-<div id="today" style="font-weight: 600;"></div>
-<h5 id="firstWeekTitle">1.</h5>
-<div id="firstWeek"></div>
+<table style="width:100%;">
+	<tr>
+		<td style="text-align: left; width:45%;">
+			<div><span id="today" style="font-weight: 600;"></span>&nbsp;<span id="statusIndicator"><i
+					class="fas fa-spinner"></i></span></div>
+			<h5 id="firstWeekTitle">1.</h5>
+			<div id="firstWeek"></div>
 
-<h5 id="secondWeekTitle">2.</h5>
-<div id="secondWeek"></div>
-
+			<h5 id="secondWeekTitle">2.</h5>
+			<div id="secondWeek"></div>
+		</td>
+		<td>&nbsp;</td>
+		<td style="vertical-align: top; width:45%;">
+			<h5>Who's Out</h5>
+			<div id="whosOut"></div>
+		</td>
+	</tr>
+</table>
 <script>
-	const teamMembersMap = {
-		"001": "Srđan Đilas",
-		"002": "Srđan Jokić",
-		"003": "Milan Lukić",
-		"004": "Siniša Radin",
-		"005": "Nemanja Svorcan",
-		"006": "Radovan Škorić",
-		"007": "Milan Stojanović",
-		"008": "Mladen Arbutina"
-	};
+	class MyData {
+		_data = {
+			dayRules: [],
+			teamMembers: []
+		};
+		_hasCashedData = false;
+		_isLoading = false;
+		constructor() {
+			const cachedData = localStorage.getItem('myCachedData');
+			if (cachedData) {
+				this._hasCashedData = true;
+				this._data = JSON.parse(cachedData);
+			}
+			this._isLoading = true;
+			fetch('https://script.google.com/macros/s/AKfycbwDmyGYn0W7UQPEiDiVzqv35qTigkn-RsGA0FdHNXsROchisP_6_Og0-DNHi0Z2kGsRnw/exec')
+					.then(response => {
+						return response.text();
+					})
+					.then(text => {
+						this._isLoading = false;
+						const jsonData = JSON.parse(text.toString());
+						this._data = JSON.parse(JSON.stringify(jsonData));
+						localStorage.setItem('myCachedData', JSON.stringify(jsonData));
+						refresh();
+					})
+					.catch(error => console.error("Error:", error));
+		}
 
-	const specialDays = [
-		{
-			start: new Date(2023, 11, 4),
-			end: new Date(2023, 11, 8),
-			scrumMaster: "006",
-			reason: "HisWish"
-		},
-	];
+		get isLoading() {
+			return this._isLoading;
+		}
 
-	const firstWeekTeamMembers = ["001", "002", "003", "004", "005"];
-	const secondWeekTeamMembers = ["006", "007", "008", "007", "008"];
+		get hasCashedData() {
+			return this._hasCashedData;
+		}
 
-	function specialScrumMaster(date) {
-		for (let days of specialDays) {
+		get specialDays() {
+			return this._data.dayRules
+					.filter(item => item.type === "Replacement")
+					.map(item => ({
+						start: justDate(item.start),
+						end: justDate(item.end),
+						memberId: item.memberId || item.id,
+						reason: item.reason
+					}));
+		}
+
+		get vacations() {
+			return this._data.dayRules
+					.filter(item => item.type === "Vacation")
+					.map(item => (
+							{
+								start: justDate(item.start),
+								end: justDate(item.end),
+								memberId: item.memberId || item.id,
+								reason: item.reason
+							}));
+		}
+		
+		get whosOut() {
+			return this.vacations
+					.filter(item => item.end >= addDays(new Date(),-30) && item.start <= addDays(new Date(), 60));
+		}
+
+		get teamMembers() {
+			return this._data.teamMembers
+					.filter(item => item.status === "Active")
+					.map(item => (
+							{
+								memberId: item.memberId || item.id,
+								name: item.name,
+								shortName: item.shortName,
+								status: item.status,
+								peekOrder: item.peekOrder,
+								dayBackup: item.dayBackup,
+								backupMembers: item.backupMembers
+										.split(',')
+										.map(m => m.trim())
+							}));
+		}
+
+		getTeamMember(memberId) {
+			return this.teamMembers
+					.filter(item => item.memberId === memberId)[0];
+		}
+	}
+
+	let myData = new MyData();
+
+	const firstWeekTeamMembers = ["SĐ", "SJ", "ML", "SR", "NS"];
+	const secondWeekTeamMembers = ["RŠ", "MS", "MA", "MS", "MA"];
+
+	function getSpecialScrumMaster(date) {
+		for (let days of myData.specialDays) {
 			if (date >= days.start && date < addDays(days.end, 1)) {
-				return teamMembersMap[days.scrumMaster];
+				return days;
+			}
+		}
+		return null;
+	}
+
+	function isOnVacation(date, memberId) {
+		return myData.vacations.some(v => v.memberId === memberId && date >= v.start && date < addDays(v.end, 1));
+	}
+
+	function getFirstFreeBackup(date, memberId) {
+		for (let backupMemberId of myData.getTeamMember(memberId).backupMembers) {
+			if (!isOnVacation(date, backupMemberId)) {
+				return backupMemberId;
+			}
+		}
+		for (let member in myData.teamMembers) {
+			if (!isOnVacation(addDays(date, 1), member.memberId)) {
+				return member.memberId;
 			}
 		}
 		return null;
@@ -59,20 +173,27 @@
 	function generateWeeks(selector, today, teamMembers, firstMonday, isActiveWeek) {
 		const todayDay = today.getDay();
 		const dayElement = document.querySelector(selector);
+		dayElement.innerHTML = "";
 
 		for (let i = 0; i < daysOfWeek().length - 2; i++) {
 			const currentDay = addDays(firstMonday, i, todayDay);
-			const forceScrumMaster = specialScrumMaster(currentDay);
+			const specialScrumMaster = getSpecialScrumMaster(currentDay);
+			let scrumMasterId = teamMembers[i];
+			if (specialScrumMaster != null) {
+				scrumMasterId = specialScrumMaster.memberId;
+			}
+			if (isOnVacation(currentDay, scrumMasterId)) {
+				scrumMasterId = getFirstFreeBackup(currentDay, scrumMasterId);
+			}
+			const scrumMaster = myData.getTeamMember(scrumMasterId)?.name;
 			let text = getDayOfWeek(i).substring(0, 3);
 
-			if (forceScrumMaster) {
-				text += ` - ${forceScrumMaster}`;
-			} else if (teamMembers && teamMembers[i]) {
-				text += ` - ${teamMembersMap[teamMembers[i]]}`;
-			}
+			text += ` - ${scrumMaster}`;
 
-			if (isActiveWeek && todayDay === i) {
-				text = `<b style="color: darkgreen; font-weight: 900;">${text}</b>`;
+			if (isActiveWeek && todayDay === (i + 1)) {
+				text = `<b class="current" style="color: darkgreen; font-weight: 900;">${text}</b>`;
+			} else if (isFinished(currentDay, today)) {
+				text = `<s class="completed">${text}</s>`;
 			}
 
 			dayElement.innerHTML += `${text}<br>`;
@@ -83,7 +204,41 @@
 		const lastDay = addDays(firstDay, 4);
 		const titleElement = document.querySelector(selector);
 		titleElement.style.fontWeight = isActiveWeek ? 'bold' : 'normal';
-		titleElement.innerHTML += `Week ${formatDate(firstDay)}-${formatDate(lastDay)}:`;
+		titleElement.innerHTML = `Week ${formatDate(firstDay)}-${formatDate(lastDay)}:`;
+	}
+
+	function updateWhosOut(today) {
+		const whosOutElement = document.querySelector("#whosOut");
+		let innerHTML = "<ul>";
+		for (let item of myData.whosOut) {
+			let itemHTML = myData.getTeamMember(item.memberId).shortName;
+			itemHTML += "&nbsp;";
+			itemHTML += formatDatePeriod(item.start, item.end);
+			if (isBetween(item.start, item.end, today)) {
+				innerHTML = `<li class="current">${itemHTML}</li>`;
+			} else if (isFinished(item.end, today)) {
+				innerHTML = `<li class="completed">${itemHTML}</li>`;
+			} else {
+				innerHTML += `<li class="normal">${itemHTML}</li>`;
+			}
+		}
+		innerHTML += "</ul>";
+		whosOutElement.innerHTML = innerHTML;
+	}
+
+	function isBetween(start, end, today) {
+		return start <= today && end >= today;
+	}
+
+	function isFinished(end, today) {
+		return end < today;
+	}
+
+	function formatDatePeriod(start, end) {
+		if (formatDate(start) === formatDate(end)) {
+			return formatDate(start);
+		}
+		return `${formatDate(start)} - ${formatDate(end)}`;
 	}
 
 	function updateToday(date) {
@@ -91,10 +246,17 @@
 		todayElement.innerHTML = `${formatDate(date)}.${date.getFullYear()} - ${getDayOfWeek((date.getDay() + 6) % 7)}`;
 	}
 
+	function justDate(date) {
+		const d = new Date(date);
+		d.setHours(0, 0, 0, 0);
+		return d;
+	}
+
 	function getMonday(d) {
-		const day = d.getDay();
-		const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-		return new Date(d.setDate(diff));
+		const date = new Date(d);
+		const day = date.getDay();
+		const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+		return new Date(date.setDate(diff));
 	}
 
 	function formatDate(date) {
@@ -102,7 +264,8 @@
 	}
 
 	function CurrentWeekNumberFromFixedDate(date) {
-		return Math.ceil((date - new Date(2023, 0, 1)) / 604800000);
+		// Prilagođavanje tako da nedelja počinje od ponedeljka
+		return Math.ceil((date - new Date(2023, 0, 2)) / 604800000);
 	}
 
 	function IsFirstWeekCurrentWeek(date) {
@@ -122,22 +285,50 @@
 	function daysOfWeek() {
 		return ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 	}
+	
+	function nonWorkingDay(date) {
+		return date.getDay() === 6 || date.getDay() === 0;
+	}
 
-	const today = addDays(new Date(), 0);
-	updateToday(today);
+	function refresh() {
+		const statusIndicator = document.getElementById('statusIndicator');
+		const newDate = new Date();
+		const today = addDays(newDate, 0);
 
-	const isFirstWeekCurrentWeek = IsFirstWeekCurrentWeek(today);
-	const isSecondWeekCurrentWeek = !isFirstWeekCurrentWeek;
+		const isFirstWeekCurrentWeek = IsFirstWeekCurrentWeek(today);
+		const isSecondWeekCurrentWeek = !isFirstWeekCurrentWeek;
 
-	const thisMonday = getMonday(today);
-	const firstMonday = isFirstWeekCurrentWeek ? new Date(thisMonday) : addDays(thisMonday, -7);
-	const secondMonday = isSecondWeekCurrentWeek ? new Date(thisMonday) : addDays(thisMonday, 7)
+		const thisMonday = getMonday(today);
+		const firstMonday = isFirstWeekCurrentWeek ? new Date(thisMonday) : addDays(thisMonday, -7);
+		const secondMonday = isSecondWeekCurrentWeek ? new Date(thisMonday) : addDays(thisMonday, 7)
 
-	generateWeeks("#firstWeek", today, firstWeekTeamMembers, firstMonday, isFirstWeekCurrentWeek);
-	generateWeeks("#secondWeek", today, secondWeekTeamMembers, secondMonday, isSecondWeekCurrentWeek);
+		updateToday(today);
 
-	updateTitleWithWeekNumber("#firstWeekTitle", firstMonday, isFirstWeekCurrentWeek);
-	updateTitleWithWeekNumber("#secondWeekTitle", secondMonday, isSecondWeekCurrentWeek);
+		generateWeeks("#firstWeek", today, firstWeekTeamMembers, firstMonday, isFirstWeekCurrentWeek);
+		generateWeeks("#secondWeek", today, secondWeekTeamMembers, secondMonday, isSecondWeekCurrentWeek);
+
+		updateTitleWithWeekNumber("#firstWeekTitle", firstMonday, isFirstWeekCurrentWeek);
+		updateTitleWithWeekNumber("#secondWeekTitle", secondMonday, isSecondWeekCurrentWeek);
+
+		updateWhosOut(today);
+
+		if (myData.isLoading) {
+			if (myData.hasCashedData) {
+				statusIndicator.innerHTML = '<i class="fas fa-wifi"></i>';
+			} else {
+				statusIndicator.innerHTML = "";
+			}
+			statusIndicator.innerHTML += '&nbsp;<i class="fas fa-spinner fa-spin"></i>'
+		} else {
+			statusIndicator.innerHTML = '<i class="fas fa-check"></i>';
+		}
+		
+		if (nonWorkingDay(today)) {
+			statusIndicator.innerHTML += '&nbsp;<i class="fas fa-bed"></i>'
+		}
+	}
+
+	refresh();
 </script>
 </body>
 </html>
