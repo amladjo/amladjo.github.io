@@ -1,19 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Scrum Master</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Helvetica, Sans-Serif, sans-serif;
-            font-size: 12px;
-        }
+	<title>Scrum Master</title>
+	<style>
+		body {
+			font-family: 'Segoe UI', Tahoma, Helvetica, Sans-Serif, sans-serif;
+			font-size: 12px;
+		}
 
-        h5 {
-            font-size: 14px;
-            margin-top: 10px;
-            margin-bottom: 3px;
-        }
-    </style>
+		h5 {
+			font-size: 14px;
+			margin-top: 10px;
+			margin-bottom: 3px;
+		}
+	</style>
 </head>
 <body>
 <div id="today" style="font-weight: 600;"></div>
@@ -24,107 +24,120 @@
 <div id="secondWeek"></div>
 
 <script>
-    const specialDays = [
-        {
-            start: new Date(2023, 11, 4),
-            end: new Date(2023, 11, 8),
-            scrumMaster: "Radovan Škorić"
-        },
-    ];
+	const teamMembersMap = {
+		"001": "Srđan Đilas",
+		"002": "Srđan Jokić",
+		"003": "Milan Lukić",
+		"004": "Siniša Radin",
+		"005": "Nemanja Svorcan",
+		"006": "Radovan Škorić",
+		"007": "Milan Stojanović",
+		"008": "Mladen Arbutina"
+	};
 
-    function isSpecialDay(date) {
-        for (let day of specialDays) {
-            if (date >= day.start && date <= day.end) {
-                return day.scrumMaster;
-            }
-        }
-        return null;
-    }
-    
-    function generateWeeks(selector, teamMembers, today, isActiveWeek) {
-        const todayDay = today.getDay();
-        const dayElement = document.querySelector(selector);
-        const specialScrumMaster = isSpecialDay(today);
+	const specialDays = [
+		{
+			start: new Date(2023, 11, 4),
+			end: new Date(2023, 11, 8),
+			scrumMaster: "006",
+			reason: "HisWish"
+		},
+	];
 
-        for (let i = 0; i < daysOfWeek().length - 2; i++) {
-            let text = getDayOfWeek(i).substring(0, 3);
+	const firstWeekTeamMembers = ["001", "002", "003", "004", "005"];
+	const secondWeekTeamMembers = ["006", "007", "008", "007", "008"];
 
-            if (specialScrumMaster) {
-                text += ` - ${specialScrumMaster}`;
-            } else if (teamMembers && teamMembers[i]) {
-                text += ` - ${teamMembers[i]}`;
-            }
+	function specialScrumMaster(date) {
+		for (let days of specialDays) {
+			if (date >= days.start && date < addDays(days.end, 1)) {
+				return teamMembersMap[days.scrumMaster];
+			}
+		}
+		return null;
+	}
 
-            if (isActiveWeek && todayDay === (i + 1)) {
-                text = `<b style="color: darkgreen; font-weight: 900;">${text}</b>`;
-            }
+	function generateWeeks(selector, today, teamMembers, firstMonday, isActiveWeek) {
+		const todayDay = today.getDay();
+		const dayElement = document.querySelector(selector);
 
-            dayElement.innerHTML += `${text}<br>`;
-        }
-    }
+		for (let i = 0; i < daysOfWeek().length - 2; i++) {
+			const currentDay = addDays(firstMonday, i, todayDay);
+			const forceScrumMaster = specialScrumMaster(currentDay);
+			let text = getDayOfWeek(i).substring(0, 3);
 
-    function updateTitleWithWeekNumber(selector, firstDay, isActiveWeek) {
-        const lastDay = addDays(firstDay, 4);
-        const titleElement = document.querySelector(selector);
-        titleElement.style.fontWeight = isActiveWeek ? 'bold' : 'normal';
-        titleElement.innerHTML += `Week ${formatDate(firstDay)}-${formatDate(lastDay)}:`;
-    }
-    
-    function updateToday(date) {
-        const todayElement = document.querySelector("#today");
-        todayElement.innerHTML = `${formatDate(date)}.${date.getFullYear()} - ${getDayOfWeek((date.getDay()+6)%7)}`;
-    }
+			if (forceScrumMaster) {
+				text += ` - ${forceScrumMaster}`;
+			} else if (teamMembers && teamMembers[i]) {
+				text += ` - ${teamMembersMap[teamMembers[i]]}`;
+			}
 
-    function getMonday(d) {
-        const day = d.getDay();
-        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-        return new Date(d.setDate(diff));
-    }
+			if (isActiveWeek && todayDay === i) {
+				text = `<b style="color: darkgreen; font-weight: 900;">${text}</b>`;
+			}
 
-    function formatDate(date) {
-        return `${date.getDate()}.${date.getMonth() + 1}`;
-    }
+			dayElement.innerHTML += `${text}<br>`;
+		}
+	}
 
-    function CurrentWeekNumberFromFixedDate(date) {
-        return Math.ceil((date - new Date(2023, 0, 1)) / 604800000);
-    }
-    
-    function IsFirstWeekCurrentWeek(date) {
-        return CurrentWeekNumberFromFixedDate(date) % 2 === 0;
-    }
+	function updateTitleWithWeekNumber(selector, firstDay, isActiveWeek) {
+		const lastDay = addDays(firstDay, 4);
+		const titleElement = document.querySelector(selector);
+		titleElement.style.fontWeight = isActiveWeek ? 'bold' : 'normal';
+		titleElement.innerHTML += `Week ${formatDate(firstDay)}-${formatDate(lastDay)}:`;
+	}
 
-    function addDays(date, days) {
-        const newDate = new Date(date);
-        newDate.setDate(newDate.getDate() + days);
-        return newDate;
-    }
-    
-    function getDayOfWeek(day) {
-        return daysOfWeek()[day];
-    }
-    
-    function daysOfWeek() {
-        return ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-    }
+	function updateToday(date) {
+		const todayElement = document.querySelector("#today");
+		todayElement.innerHTML = `${formatDate(date)}.${date.getFullYear()} - ${getDayOfWeek((date.getDay() + 6) % 7)}`;
+	}
 
-    const today = addDays(new Date(), 0);
-    updateToday(today);
+	function getMonday(d) {
+		const day = d.getDay();
+		const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+		return new Date(d.setDate(diff));
+	}
 
-    const isFirstWeekCurrentWeek = IsFirstWeekCurrentWeek(today);
-    const isSecondWeekCurrentWeek = !isFirstWeekCurrentWeek;
+	function formatDate(date) {
+		return `${date.getDate()}.${date.getMonth() + 1}`;
+	}
 
-    const firstWeekTeamMembers = ["Srđan Đilas", "Srđan Jokić", "Milan Lukić", "Siniša Radin", "Nemanja Svorcan"];
-    const secondWeekTeamMembers = ["Radovan Škorić", "Milan Stojanović", "Mladen Arbutina", "Milan Stojanović", "Mladen Arbutina"];
+	function CurrentWeekNumberFromFixedDate(date) {
+		return Math.ceil((date - new Date(2023, 0, 1)) / 604800000);
+	}
 
-    generateWeeks("#firstWeek", firstWeekTeamMembers, today, isFirstWeekCurrentWeek);
-    generateWeeks("#secondWeek", secondWeekTeamMembers, today, isSecondWeekCurrentWeek);
+	function IsFirstWeekCurrentWeek(date) {
+		return CurrentWeekNumberFromFixedDate(date) % 2 === 0;
+	}
 
-    const thisMonday = getMonday(today);
-    const firstMonday = isFirstWeekCurrentWeek ? new Date(thisMonday) : addDays(thisMonday, -7);
-    const secondMonday = isSecondWeekCurrentWeek ? new Date(thisMonday) : addDays(thisMonday, 7)
+	function addDays(date, days) {
+		const newDate = new Date(date);
+		newDate.setDate(newDate.getDate() + days);
+		return newDate;
+	}
 
-    updateTitleWithWeekNumber("#firstWeekTitle", firstMonday, isFirstWeekCurrentWeek);
-    updateTitleWithWeekNumber("#secondWeekTitle", secondMonday, isSecondWeekCurrentWeek);
+	function getDayOfWeek(day) {
+		return daysOfWeek()[day];
+	}
+
+	function daysOfWeek() {
+		return ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+	}
+
+	const today = addDays(new Date(), 0);
+	updateToday(today);
+
+	const isFirstWeekCurrentWeek = IsFirstWeekCurrentWeek(today);
+	const isSecondWeekCurrentWeek = !isFirstWeekCurrentWeek;
+
+	const thisMonday = getMonday(today);
+	const firstMonday = isFirstWeekCurrentWeek ? new Date(thisMonday) : addDays(thisMonday, -7);
+	const secondMonday = isSecondWeekCurrentWeek ? new Date(thisMonday) : addDays(thisMonday, 7)
+
+	generateWeeks("#firstWeek", today, firstWeekTeamMembers, firstMonday, isFirstWeekCurrentWeek);
+	generateWeeks("#secondWeek", today, secondWeekTeamMembers, secondMonday, isSecondWeekCurrentWeek);
+
+	updateTitleWithWeekNumber("#firstWeekTitle", firstMonday, isFirstWeekCurrentWeek);
+	updateTitleWithWeekNumber("#secondWeekTitle", secondMonday, isSecondWeekCurrentWeek);
 </script>
 </body>
 </html>
