@@ -40,14 +40,14 @@
 		</td>
 	</tr>
 	<tr>
-		<td style="text-align: left; width:45%;">
+		<td style="text-align: left; width:35%;">
 			<h5 id="firstWeekTitle">1.</h5>
 			<div id="firstWeek"></div>
 			<h5 id="secondWeekTitle">2.</h5>
 			<div id="secondWeek"></div>
 		</td>
-		<td>&nbsp;</td>
-		<td style="vertical-align: top; width:45%;">
+		<td style="width: 10%;">&nbsp;</td>
+		<td style="vertical-align: top; width:55%;">
 			<h5>Who's Out</h5>
 			<div id="whosOut"></div>
 		</td>
@@ -244,6 +244,12 @@
 		return `${formatDate(start)} - ${formatDate(end)}`;
 	}
 
+	function formatDate(date) {
+		const day = String(date.getDate()).padStart(2, '0');
+		const month = String(date.getMonth() + 1).padStart(2, '0');
+		return `${day}.${month}`;
+	}
+
 	function updateToday(date) {
 		const todayElement = document.querySelector("#today");
 		todayElement.innerHTML = `${formatDate(date)}.${date.getFullYear()} - ${getDayOfWeek((date.getDay() + 6) % 7)}`;
@@ -260,10 +266,6 @@
 		const day = date.getDay();
 		const diff = date.getDate() - day + (day === 0 ? -6 : 1);
 		return new Date(date.setDate(diff));
-	}
-
-	function formatDate(date) {
-		return `${date.getDate()}.${date.getMonth() + 1}`;
 	}
 
 	function CurrentWeekNumberFromFixedDate(date) {
@@ -324,10 +326,22 @@
 			statusIndicator.innerHTML += '&nbsp;<i class="fas fa-spinner fa-spin"></i>'
 		} else {
 			statusIndicator.innerHTML = '<i class="fas fa-check"></i>';
+			setTimeout(() => removeStatusIndicator(today), 5000);
 		}
 		
 		if (nonWorkingDay(today)) {
 			statusIndicator.innerHTML += '&nbsp;<i class="fas fa-bed"></i>'
+		}
+	}
+
+	function removeStatusIndicator(today) {
+		const statusIndicator = document.getElementById('statusIndicator');
+		if (statusIndicator) {
+			if (nonWorkingDay(today)) {
+				statusIndicator.innerHTML = '&nbsp;<i class="fas fa-bed"></i>';
+			} else  {
+				statusIndicator.innerHTML = "";
+			}
 		}
 	}
 
