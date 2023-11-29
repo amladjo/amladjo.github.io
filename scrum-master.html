@@ -111,6 +111,10 @@
 			return this._hasCashedData;
 		}
 		
+		get cashDataNotAllowed() {
+			return this._cashDataNotAllowed;
+		}
+		
 		get dayRules() {
 			return (this._data.dayRules ? this._data.dayRules : [])
 					.map(item => ({
@@ -436,6 +440,9 @@
 			setTimeout(removeStatusIndicator, 5000);
 		}
 		
+		if (myData.cashDataNotAllowed) {
+			statusIndicator.innerHTML += '&nbsp;<i class="fas fa-exclamation-triangle"></i>'
+		}
 		if (nonWorkingDay(today)) {
 			statusIndicator.innerHTML += '&nbsp;<i class="fas fa-bed"></i>'
 		}
