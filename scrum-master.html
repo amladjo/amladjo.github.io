@@ -10,8 +10,9 @@
 
 		h5 {
 			font-size: 14px;
-			margin-top: 10px;
-			margin-bottom: 3px;
+			margin-top: 5px;
+			margin-bottom: 2px;
+			background: linear-gradient(to right, #e3eaed, transparent);
 		}
 		
 		tr td:first-child {
@@ -20,6 +21,7 @@
 		
 		ul {
 			padding-left: 2em;
+			margin-top: 2px;
 		}
 
 		.normal {
@@ -29,6 +31,11 @@
 			font-weight: bold;
 		}
 
+		.current-scrum-master {
+			color: darkgreen;
+			font-weight: 900;
+		}
+		
 		.completed {
 			text-decoration: line-through;
 			color: grey;
@@ -64,6 +71,8 @@
 </table>
 <script>
 	class MyData {
+		_cashDataName = "scrumMasterCachedData";
+		_fetchUrl = 'https://script.google.com/macros/s/AKfycbwDmyGYn0W7UQPEiDiVzqv35qTigkn-RsGA0FdHNXsROchisP_6_Og0-DNHi0Z2kGsRnw/exec';
 		_data = {
 			dayRules: [],
 			holidays: [],
@@ -75,7 +84,7 @@
 		_today = new Date();
 		constructor() {
 			try {
-				const cachedData = localStorage.getItem('myCachedData');
+				const cachedData = localStorage.getItem(this._cashDataName);
 				if (cachedData) {
 					this._hasCashedData = true;
 					this._data = JSON.parse(cachedData);
@@ -84,7 +93,7 @@
 				this._cashDataNotAllowed = true;
 			}
 			this._isLoading = true;
-			fetch('https://script.google.com/macros/s/AKfycbwDmyGYn0W7UQPEiDiVzqv35qTigkn-RsGA0FdHNXsROchisP_6_Og0-DNHi0Z2kGsRnw/exec')
+			fetch(this._fetchUrl)
 					.then(response => {
 						return response.text();
 					})
@@ -93,7 +102,7 @@
 						const jsonData = JSON.parse(text.toString());
 						this._data = JSON.parse(JSON.stringify(jsonData));
 						if (!this._cashDataNotAllowed) {
-							localStorage.setItem('myCachedData', JSON.stringify(jsonData));
+							localStorage.setItem(this._cashDataName, JSON.stringify(jsonData));
 						}
 					})
 					.then(refresh)
@@ -241,6 +250,7 @@
 
 	const urlParams = new URLSearchParams(window.location.search);
 	const paramToday = urlParams.get('today');
+	const paramSleep = urlParams.get('sleep');
 
 	let myData = new MyData();
 
@@ -361,7 +371,7 @@
 				text += ` - ${scrumMasterName}`;
 
 				if (isActiveWeek && todayDay === (i + 1)) {
-					text = `<b class="current" style="color: darkgreen; font-weight: 900;">${text}</b>`;
+					text = `<b class="current-scrum-master">${text}</b>`;
 				} else if (isFinished(currentDay, today)) {
 					text = `<s class="completed">${text}</s>`;
 				}
