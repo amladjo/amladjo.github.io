@@ -317,7 +317,7 @@
 		if (myData.isInitializing) {
 			whosOutElement.innerHTML = "initializing...";
 		} else {
-			let innerHTML = "<ul>";
+			let innerHTML = '<ul style="padding-left: 2em;">';
 			for (let item of myData.whosOut) {
 				let itemHTML = myData.getTeamMember(item.memberId).shortName;
 				itemHTML += "&nbsp;";
