@@ -65,13 +65,18 @@
 			teamMembers: []
 		};
 		_hasCashedData = false;
+		_cashDataNotAllowed = false;
 		_isLoading = false;
 		_today = new Date();
 		constructor() {
-			const cachedData = localStorage.getItem('myCachedData');
-			if (cachedData) {
-				this._hasCashedData = true;
-				this._data = JSON.parse(cachedData);
+			try {
+				const cachedData = localStorage.getItem('myCachedData');
+				if (cachedData) {
+					this._hasCashedData = true;
+					this._data = JSON.parse(cachedData);
+				}
+			} catch (e) {
+				this._cashDataNotAllowed = true;
 			}
 			this._isLoading = true;
 			fetch('https://script.google.com/macros/s/AKfycbwDmyGYn0W7UQPEiDiVzqv35qTigkn-RsGA0FdHNXsROchisP_6_Og0-DNHi0Z2kGsRnw/exec')
@@ -82,7 +87,9 @@
 						this._isLoading = false;
 						const jsonData = JSON.parse(text.toString());
 						this._data = JSON.parse(JSON.stringify(jsonData));
-						localStorage.setItem('myCachedData', JSON.stringify(jsonData));
+						if (!this._cashDataNotAllowed) {
+							localStorage.setItem('myCachedData', JSON.stringify(jsonData));
+						}
 					})
 					.then(refresh)
 					.catch(error => console.error("Error:", error));
