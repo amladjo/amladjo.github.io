@@ -187,16 +187,18 @@
 			let memberIndex = 0;
 			const members = [];
 			const tempTeamMembers = [...this.teamMembers];
-			while (members.length < 5) {
-				const member = tempTeamMembers[memberIndex];
-				members.push(member.memberId)
-				if (member.dayBackup) {
-					memberIndex++;
-				} else {
-					tempTeamMembers.splice(memberIndex, 1);
-				}
-				if (memberIndex >= tempTeamMembers.length) {
-					memberIndex = 0;
+			if (tempTeamMembers.length > 0) {
+				while (members.length < 5) {
+					const member = tempTeamMembers[memberIndex];
+					members.push(member.memberId)
+					if (member.dayBackup) {
+						memberIndex++;
+					} else {
+						tempTeamMembers.splice(memberIndex, 1);
+					}
+					if (memberIndex >= tempTeamMembers.length) {
+						memberIndex = 0;
+					}
 				}
 			}
 			return members;
@@ -206,24 +208,26 @@
 			let memberIndex = 0;
 			const members = [];
 			const teamMembers = this.teamMembers;
-			const firstWeekTeamMembers = this.firstWeekTeamMembers;
-			const restOfTeamMembers = teamMembers
-					.filter(member => !firstWeekTeamMembers.includes(member.memberId))
-					.concat(teamMembers
-							.filter(member => firstWeekTeamMembers.includes(member.memberId))
-							.filter(member => member.dayBackup)
-							);
-			const tempTeamMembers = [...restOfTeamMembers];
-			while (members.length < 5) {
-				const member = tempTeamMembers[memberIndex];
-				members.push(member.memberId)
-				if (member.dayBackup) {
-					memberIndex++;
-				} else {
-					tempTeamMembers.splice(memberIndex, 1);
-				}
-				if (memberIndex >= tempTeamMembers.length) {
-					memberIndex = 0;
+			if (teamMembers.length > 0) {
+				const firstWeekTeamMembers = this.firstWeekTeamMembers;
+				const restOfTeamMembers = teamMembers
+						.filter(member => !firstWeekTeamMembers.includes(member.memberId))
+						.concat(teamMembers
+								.filter(member => firstWeekTeamMembers.includes(member.memberId))
+								.filter(member => member.dayBackup)
+						);
+				const tempTeamMembers = [...restOfTeamMembers];
+				while (members.length < 5) {
+					const member = tempTeamMembers[memberIndex];
+					members.push(member.memberId)
+					if (member.dayBackup) {
+						memberIndex++;
+					} else {
+						tempTeamMembers.splice(memberIndex, 1);
+					}
+					if (memberIndex >= tempTeamMembers.length) {
+						memberIndex = 0;
+					}
 				}
 			}
 			return members;
@@ -471,22 +475,21 @@
 
 	function refresh() {
 		const statusIndicator = document.getElementById('statusIndicator');
-		const today = addDays(myData.today, 0);
 
-		const isFirstWeekCurrentWeek = IsFirstWeekCurrentWeek(today);
+		const isFirstWeekCurrentWeek = IsFirstWeekCurrentWeek(myData.today);
 		const isSecondWeekCurrentWeek = !isFirstWeekCurrentWeek;
 
-		const thisMonday = getMonday(today);
+		const thisMonday = getMonday(myData.today);
 		const firstMonday = isFirstWeekCurrentWeek ? new Date(thisMonday) : addDays(thisMonday, -7);
 		const secondMonday = isSecondWeekCurrentWeek ? new Date(thisMonday) : addDays(thisMonday, 7)
 
-		updateToday(today);
-
-		generateWeeks("#firstWeek", today, myData.firstWeekTeamMembers, firstMonday, isFirstWeekCurrentWeek);
-		generateWeeks("#secondWeek", today, myData.secondWeekTeamMembers, secondMonday, isSecondWeekCurrentWeek);
+		updateToday(myData.today);
 
 		updateTitleWithWeekNumber("#firstWeekTitle", firstMonday, isFirstWeekCurrentWeek);
 		updateTitleWithWeekNumber("#secondWeekTitle", secondMonday, isSecondWeekCurrentWeek);
+
+		generateWeeks("#firstWeek", myData.today, myData.firstWeekTeamMembers, firstMonday, isFirstWeekCurrentWeek);
+		generateWeeks("#secondWeek", myData.today, myData.secondWeekTeamMembers, secondMonday, isSecondWeekCurrentWeek);
 
 		updateWhosOut();
 
@@ -505,10 +508,10 @@
 		if (myData.cashDataNotAllowed) {
 			statusIndicator.innerHTML += '&nbsp;<i class="fas fa-exclamation-triangle"></i>'
 		}
-		if (nonWorkingDay(today)) {
+		if (nonWorkingDay(myData.today)) {
 			statusIndicator.innerHTML += '&nbsp;<i class="fas fa-bed"></i>'
 		}
-		if (isHoliday(today)) {
+		if (isHoliday(myData.today)) {
 			statusIndicator.innerHTML += '&nbsp;<i class="fas fa-gift"></i>'
 		}
 	}
