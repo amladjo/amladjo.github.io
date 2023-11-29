@@ -13,8 +13,13 @@
 			margin-top: 10px;
 			margin-bottom: 3px;
 		}
+		
 		tr td:first-child {
 			text-align: center;
+		}
+		
+		ul {
+			padding-left: 2em;
 		}
 
 		.normal {
@@ -317,7 +322,7 @@
 		if (myData.isInitializing) {
 			whosOutElement.innerHTML = "initializing...";
 		} else {
-			let innerHTML = '<ul style="padding-left: 2em;">';
+			let innerHTML = '<ul>';
 			for (let item of myData.whosOut) {
 				let itemHTML = myData.getTeamMember(item.memberId).shortName;
 				itemHTML += "&nbsp;";
