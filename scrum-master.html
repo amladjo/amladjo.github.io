@@ -64,13 +64,13 @@
 		</td>
 		<td style="width: 2%;">&nbsp;</td>
 		<td style="vertical-align: top; width: 50%;">
-			<h5>Who's Out</h5>
+			<h5><i class="fas fa-calendar-check"></i>&nbsp;Who's Out</h5>
 			<div id="whosOut"></div>
 		</td>
 	</tr>
 </table>
 <script>
-	class MyData {
+	class SMLib {
 		_cashDataName = "scrumMasterCachedData";
 		_fetchUrl = 'https://script.google.com/macros/s/AKfycbwDmyGYn0W7UQPEiDiVzqv35qTigkn-RsGA0FdHNXsROchisP_6_Og0-DNHi0Z2kGsRnw/exec';
 		_data = {
@@ -252,11 +252,11 @@
 	const paramToday = urlParams.get('today');
 	const paramSleep = urlParams.get('sleep');
 
-	let myData = new MyData();
+	let smLib = new SMLib();
 
 	if (paramToday) {
 		if (isValidDate(paramToday)) {
-			myData._today = new Date(paramToday);
+			smLib._today = new Date(paramToday);
 		}
 	}
 
@@ -269,7 +269,7 @@
 	}
 
 	function getSpecialScrumMaster(date) {
-		for (let days of myData.specialDays) {
+		for (let days of smLib.specialDays) {
 			if (date >= days.start && date < addDays(days.end, 1)) {
 				return days;
 			}
@@ -278,12 +278,12 @@
 	}
 
 	function isOnVacation(date, memberId) {
-		return myData.vacations.some(v => v.memberId === memberId && date >= v.start && date < addDays(v.end, 1));
+		return smLib.vacations.some(v => v.memberId === memberId && date >= v.start && date < addDays(v.end, 1));
 	}
 	
 	
 	function currentHoliday(date) {
-		return myData.holidays.filter(h => formatFullDate(h.date) === formatFullDate(date));
+		return smLib.holidays.filter(h => formatFullDate(h.date) === formatFullDate(date));
 	}
 	
 	function isHoliday(date) {
@@ -296,7 +296,7 @@
 	}
 	
 	function getFirstFreeBackup(date, memberId) {
-		const backupMembers = myData.getTeamMember(memberId).backupMembers;
+		const backupMembers = smLib.getTeamMember(memberId).backupMembers;
 		if (backupMembers.length > 0) {
 			for (let backupMemberId of backupMembers) {
 				if (!isOnVacation(date, backupMemberId)) {
@@ -305,7 +305,7 @@
 			}
 		}
 		let seed = getDateSeed(date);
-		let shuffledTeamMembers = shuffleArray([...myData.teamMembers], seed);
+		let shuffledTeamMembers = shuffleArray([...smLib.teamMembers], seed);
 		for (let member of shuffledTeamMembers) {
 			if (!isOnVacation(date, member.memberId)) {
 				return member.memberId;
@@ -339,7 +339,9 @@
 		return date.getFullYear() * 10000 + (date.getMonth() + 1) * 100 + date.getDate();
 	}
 
-	function generateWeeks(selector, today, teamMembers, firstMonday, isActiveWeek) {
+	function generateWeeks(weekIndex, selector, today, teamMembers, firstMonday, isActiveWeek) {
+		updateTitleWithWeekNumber(weekIndex, selector + "Title", firstMonday, isActiveWeek);
+		
 		const todayDay = today.getDay();
 		const dayElement = document.querySelector(selector);
 		dayElement.innerHTML = "";
@@ -358,11 +360,11 @@
 				if (isOnVacation(currentDay, scrumMasterId)) {
 					scrumMasterId = getFirstFreeBackup(currentDay, scrumMasterId);
 				}
-				const scrumMaster = myData.getTeamMember(scrumMasterId)
+				const scrumMaster = smLib.getTeamMember(scrumMasterId)
 				let scrumMasterName;
 				if (scrumMaster) {
 					scrumMasterName = scrumMaster.name;
-				} else if (myData.isInitializing) {
+				} else if (smLib.isInitializing) {
 					scrumMasterName = "initializing...";
 				} else {
 					scrumMasterName = "Unknown";
@@ -381,21 +383,21 @@
 		}
 	}
 
-	function updateTitleWithWeekNumber(selector, firstDay, isActiveWeek) {
+	function updateTitleWithWeekNumber(weekIndex, selector, firstDay, isActiveWeek) {
 		const lastDay = addDays(firstDay, 4);
 		const titleElement = document.querySelector(selector);
 		titleElement.style.fontWeight = isActiveWeek ? 'bold' : 'normal';
-		titleElement.innerHTML = `Week ${formatDate(firstDay)}-${formatDate(lastDay)}:`;
+		titleElement.innerHTML = `${weekIndex}. Week ${formatDate(firstDay)}-${formatDate(lastDay)}`;
 	}
 
 	function updateWhosOut() {
 		const whosOutElement = document.querySelector("#whosOut");
-		if (myData.isInitializing) {
+		if (smLib.isInitializing) {
 			whosOutElement.innerHTML = "initializing...";
 		} else {
 			let innerHTML = '<ul>';
-			for (let item of myData.whosOut) {
-				let itemHTML = myData.getTeamMember(item.memberId).shortName;
+			for (let item of smLib.whosOut) {
+				let itemHTML = smLib.getTeamMember(item.memberId).shortName;
 				itemHTML += "&nbsp;";
 				itemHTML += formatDatePeriod(item.start, item.end);
 				if (item.status === 0) {
@@ -486,25 +488,22 @@
 	function refresh() {
 		const statusIndicator = document.getElementById('statusIndicator');
 
-		const isFirstWeekCurrentWeek = IsFirstWeekCurrentWeek(myData.today);
+		const isFirstWeekCurrentWeek = IsFirstWeekCurrentWeek(smLib.today);
 		const isSecondWeekCurrentWeek = !isFirstWeekCurrentWeek;
 
-		const thisMonday = getMonday(myData.today);
+		const thisMonday = getMonday(smLib.today);
 		const firstMonday = isFirstWeekCurrentWeek ? new Date(thisMonday) : addDays(thisMonday, -7);
 		const secondMonday = isSecondWeekCurrentWeek ? new Date(thisMonday) : addDays(thisMonday, 7)
 
-		updateToday(myData.today);
+		updateToday(smLib.today);
 
-		updateTitleWithWeekNumber("#firstWeekTitle", firstMonday, isFirstWeekCurrentWeek);
-		updateTitleWithWeekNumber("#secondWeekTitle", secondMonday, isSecondWeekCurrentWeek);
-
-		generateWeeks("#firstWeek", myData.today, myData.firstWeekTeamMembers, firstMonday, isFirstWeekCurrentWeek);
-		generateWeeks("#secondWeek", myData.today, myData.secondWeekTeamMembers, secondMonday, isSecondWeekCurrentWeek);
+		generateWeeks(1, "#firstWeek", smLib.today, smLib.firstWeekTeamMembers, firstMonday, isFirstWeekCurrentWeek);
+		generateWeeks(2, "#secondWeek", smLib.today, smLib.secondWeekTeamMembers, secondMonday, isSecondWeekCurrentWeek);
 
 		updateWhosOut();
 
-		if (myData.isLoading) {
-			if (myData.hasCashedData) {
+		if (smLib.isLoading) {
+			if (smLib.hasCashedData) {
 				statusIndicator.innerHTML = '<i class="fas fa-wifi"></i>';
 			} else {
 				statusIndicator.innerHTML = "";
@@ -515,13 +514,13 @@
 			setTimeout(removeStatusIndicator, 5000);
 		}
 		
-		if (myData.cashDataNotAllowed) {
+		if (smLib.cashDataNotAllowed) {
 			statusIndicator.innerHTML += '&nbsp;<i class="fas fa-exclamation-triangle"></i>'
 		}
-		if (nonWorkingDay(myData.today)) {
+		if (nonWorkingDay(smLib.today)) {
 			statusIndicator.innerHTML += '&nbsp;<i class="fas fa-bed"></i>'
 		}
-		if (isHoliday(myData.today)) {
+		if (isHoliday(smLib.today)) {
 			statusIndicator.innerHTML += '&nbsp;<i class="fas fa-gift"></i>'
 		}
 	}
