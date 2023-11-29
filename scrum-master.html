@@ -83,8 +83,8 @@
 						const jsonData = JSON.parse(text.toString());
 						this._data = JSON.parse(JSON.stringify(jsonData));
 						localStorage.setItem('myCachedData', JSON.stringify(jsonData));
-						refresh();
 					})
+					.then(refresh)
 					.catch(error => console.error("Error:", error));
 		}
 		
@@ -94,6 +94,10 @@
 
 		get isLoading() {
 			return this._isLoading;
+		}
+		
+		get isInitializing() {
+			return this._isLoading && !this._hasCashedData;
 		}
 
 		get hasCashedData() {
@@ -172,6 +176,10 @@
 
 	const firstWeekTeamMembers = ["SĐ", "SJ", "ML", "SR", "NS"];
 	const secondWeekTeamMembers = ["RŠ", "MS", "MA", "MS", "MA"];
+
+	function sleep(ms) {
+		return new Promise(resolve => setTimeout(resolve, ms));
+	}
 
 	function getSpecialScrumMaster(date) {
 		for (let days of myData.specialDays) {
@@ -263,9 +271,17 @@
 				if (isOnVacation(currentDay, scrumMasterId)) {
 					scrumMasterId = getFirstFreeBackup(currentDay, scrumMasterId);
 				}
-				const scrumMaster = myData.getTeamMember(scrumMasterId)?.name;
-
-				text += ` - ${scrumMaster}`;
+				const scrumMaster = myData.getTeamMember(scrumMasterId)
+				let scrumMasterName;
+				if (scrumMaster) {
+					scrumMasterName = scrumMaster.name;
+				} else if (myData.isInitializing) {
+					scrumMasterName = "initializing...";
+				} else {
+					scrumMasterName = "Unknown";
+				}
+				
+				text += ` - ${scrumMasterName}`;
 
 				if (isActiveWeek && todayDay === (i + 1)) {
 					text = `<b class="current" style="color: darkgreen; font-weight: 900;">${text}</b>`;
@@ -285,23 +301,27 @@
 		titleElement.innerHTML = `Week ${formatDate(firstDay)}-${formatDate(lastDay)}:`;
 	}
 
-	function updateWhosOut(today) {
+	function updateWhosOut() {
 		const whosOutElement = document.querySelector("#whosOut");
-		let innerHTML = "<ul>";
-		for (let item of myData.whosOut) {
-			let itemHTML = myData.getTeamMember(item.memberId).shortName;
-			itemHTML += "&nbsp;";
-			itemHTML += formatDatePeriod(item.start, item.end);
-			if (item.status === 0) {
-				innerHTML += `<li class="current">${itemHTML}</li>`;
-			} else if (item.status < 0) {
-				innerHTML += `<li class="completed">${itemHTML}</li>`;
-			} else {
-				innerHTML += `<li class="normal">${itemHTML}</li>`;
+		if (myData.isInitializing) {
+			whosOutElement.innerHTML = "initializing...";
+		} else {
+			let innerHTML = "<ul>";
+			for (let item of myData.whosOut) {
+				let itemHTML = myData.getTeamMember(item.memberId).shortName;
+				itemHTML += "&nbsp;";
+				itemHTML += formatDatePeriod(item.start, item.end);
+				if (item.status === 0) {
+					innerHTML += `<li class="current">${itemHTML}</li>`;
+				} else if (item.status < 0) {
+					innerHTML += `<li class="completed">${itemHTML}</li>`;
+				} else {
+					innerHTML += `<li class="normal">${itemHTML}</li>`;
+				}
 			}
+			innerHTML += "</ul>";
+			whosOutElement.innerHTML = innerHTML;
 		}
-		innerHTML += "</ul>";
-		whosOutElement.innerHTML = innerHTML;
 	}
 
 	function isBetween(start, end, today) {
@@ -395,7 +415,7 @@
 		updateTitleWithWeekNumber("#firstWeekTitle", firstMonday, isFirstWeekCurrentWeek);
 		updateTitleWithWeekNumber("#secondWeekTitle", secondMonday, isSecondWeekCurrentWeek);
 
-		updateWhosOut(today);
+		updateWhosOut();
 
 		if (myData.isLoading) {
 			if (myData.hasCashedData) {
