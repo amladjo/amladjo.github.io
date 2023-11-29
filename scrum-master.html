@@ -168,6 +168,7 @@
 		get teamMembers() {
 			return (this._data.teamMembers ? this._data.teamMembers : [])
 					.filter(item => item.status === "Active")
+					.sort((a, b) => a.peekOrder - b.peekOrder)
 					.map(item => (
 							{
 								memberId: item.memberId,
@@ -182,16 +183,72 @@
 							}));
 		}
 
+		get firstWeekTeamMembers() {
+			let memberIndex = 0;
+			const members = [];
+			const tempTeamMembers = [...this.teamMembers];
+			while (members.length < 5) {
+				const member = tempTeamMembers[memberIndex];
+				members.push(member.memberId)
+				if (member.dayBackup) {
+					memberIndex++;
+				} else {
+					tempTeamMembers.splice(memberIndex, 1);
+				}
+				if (memberIndex >= tempTeamMembers.length) {
+					memberIndex = 0;
+				}
+			}
+			return members;
+		}
+
+		get secondWeekTeamMembers() {
+			let memberIndex = 0;
+			const members = [];
+			const teamMembers = this.teamMembers;
+			const firstWeekTeamMembers = this.firstWeekTeamMembers;
+			const restOfTeamMembers = teamMembers
+					.filter(member => !firstWeekTeamMembers.includes(member.memberId))
+					.concat(teamMembers
+							.filter(member => firstWeekTeamMembers.includes(member.memberId))
+							.filter(member => member.dayBackup)
+							);
+			const tempTeamMembers = [...restOfTeamMembers];
+			while (members.length < 5) {
+				const member = tempTeamMembers[memberIndex];
+				members.push(member.memberId)
+				if (member.dayBackup) {
+					memberIndex++;
+				} else {
+					tempTeamMembers.splice(memberIndex, 1);
+				}
+				if (memberIndex >= tempTeamMembers.length) {
+					memberIndex = 0;
+				}
+			}
+			return members;
+		}
+
 		getTeamMember(memberId) {
 			return this.teamMembers
 					.filter(item => item.memberId === memberId)[0];
 		}
 	}
 
+	const urlParams = new URLSearchParams(window.location.search);
+	const paramToday = urlParams.get('today');
+
 	let myData = new MyData();
 
-	const firstWeekTeamMembers = ["SĐ", "SJ", "ML", "SR", "NS"];
-	const secondWeekTeamMembers = ["RŠ", "MS", "MA", "MS", "MA"];
+	if (paramToday) {
+		if (isValidDate(paramToday)) {
+			myData._today = new Date(paramToday);
+		}
+	}
+
+	function isValidDate(dateAsString) {
+		return !isNaN(Date.parse(dateAsString))
+	}
 
 	function sleep(ms) {
 		return new Promise(resolve => setTimeout(resolve, ms));
@@ -425,8 +482,8 @@
 
 		updateToday(today);
 
-		generateWeeks("#firstWeek", today, firstWeekTeamMembers, firstMonday, isFirstWeekCurrentWeek);
-		generateWeeks("#secondWeek", today, secondWeekTeamMembers, secondMonday, isSecondWeekCurrentWeek);
+		generateWeeks("#firstWeek", today, myData.firstWeekTeamMembers, firstMonday, isFirstWeekCurrentWeek);
+		generateWeeks("#secondWeek", today, myData.secondWeekTeamMembers, secondMonday, isSecondWeekCurrentWeek);
 
 		updateTitleWithWeekNumber("#firstWeekTitle", firstMonday, isFirstWeekCurrentWeek);
 		updateTitleWithWeekNumber("#secondWeekTitle", secondMonday, isSecondWeekCurrentWeek);
