@@ -38,11 +38,18 @@
 	let smLib = new SMLib();
 
 	if (paramToday) {
-		if (isValidDate(paramToday)) {
-			smLib._today = new Date(paramToday);
+		if ([" ", "+", "-"].includes(paramToday[0]) && isValidNumber(paramToday)) {
+			smLib.today = smLib.today.addDays(parseInt(paramToday));
+		}
+		else if (isValidDate(paramToday)) {
+			smLib.today = new Date(paramToday);
 		}
 	}
 
+	function isValidNumber(numberAsString) {
+		return !isNaN(parseInt(numberAsString));
+	}
+	
 	function isValidDate(dateAsString) {
 		return !isNaN(Date.parse(dateAsString))
 	}
@@ -94,19 +101,16 @@
 
 	function removeStatusIndicator() {
 		const statusIndicator = document.getElementById('statusIndicator');
-		if (statusIndicator) {
-			statusIndicator.innerHTML = statusIndicator.innerHTML.replace('<i class=\"fas fa-check\"></i>', '');
-		}
+		statusIndicator.innerHTML = statusIndicator.innerHTML.replace('<i class=\"fas fa-check\"></i>', '');
 	}
 
 	function generateWeeks(weekIndex, selector, firstMonday, isActiveWeek) {
+
 		updateTitleWithWeekNumber(weekIndex, selector + "Title", firstMonday, isActiveWeek);
 
 		const workDaysOfWeek = daysOfWeek().length - 2;
-		
 		const dayElement = document.querySelector(selector);
-		dayElement.innerHTML = "";
-
+		let innerHTML = ""
 		for (let i = 0; i < workDaysOfWeek; i++) {
 			const currentDate = firstMonday.addDays(i);
 			let text = getDayOfWeek(i).substring(0, 3);
@@ -114,15 +118,16 @@
 				text = `<span class="disabled">${text} - ${smLib.getHolidayName(currentDate)}</span>`;
 			} else {
 				text += ` - ${smLib.getScrumMasterName(currentDate, (weekIndex - 1) * workDaysOfWeek + i)}`;
-				if (smLib.isToday(currentDate)) {
-					text = `<b class="current-scrum-master">${text}</b>`;
-				} else if (smLib.isFinished(currentDate)) {
+				if (smLib.isBeforeToday(currentDate)) {
 					text = `<s class="completed">${text}</s>`;
-				}
+				} else if (smLib.isToday(currentDate)) {
+					text = `<b class="current-scrum-master">${text}</b>`;
+				} 
 			}
 
-			dayElement.innerHTML += `${text}<br>`;
+			innerHTML += `${text}<br>`;
 		}
+		dayElement.innerHTML = innerHTML;
 	}
 
 	function updateTitleWithWeekNumber(weekIndex, selector, firstDay, isActiveWeek) {
