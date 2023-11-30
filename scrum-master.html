@@ -2,49 +2,7 @@
 <html lang="en">
 <head>
 	<title>Scrum Master</title>
-	<style>
-		body {
-			font-family: 'Segoe UI', Tahoma, Helvetica, Sans-Serif, sans-serif;
-			font-size: 12px;
-		}
-
-		h5 {
-			font-size: 14px;
-			margin-top: 5px;
-			margin-bottom: 2px;
-			background: linear-gradient(to right, #e3eaed, transparent);
-		}
-		
-		tr td:first-child {
-			text-align: center;
-		}
-		
-		ul {
-			padding-left: 2em;
-			margin-top: 2px;
-		}
-
-		.normal {
-		}
-
-		.current {
-			font-weight: bold;
-		}
-
-		.current-scrum-master {
-			color: darkgreen;
-			font-weight: 900;
-		}
-		
-		.completed {
-			text-decoration: line-through;
-			color: grey;
-		}
-
-		.disabled {
-			color: darkred;
-		}
-	</style>
+	<link rel="stylesheet" type="text/css" href="styles\scrum-master.css">
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
 </head>
 <body>
@@ -69,245 +27,10 @@
 		</td>
 	</tr>
 </table>
+<script src="lib/dateExtensions.js"></script>
+<script src="lib/StorageData.js"></script>
+<script src="lib/SMLib.js"></script>
 <script>
-	Date.prototype.addDays = function(days) {
-		const date = new Date(this.valueOf());
-		date.setDate(date.getDate() + days);
-		return date;
-	}
-
-	class StorageData {
-		_cashDataName = "scrumMasterCachedData";
-		_cashDataExpiredName = "scrumMasterCachedDataExpired";
-		_cashExpiredDate = new Date();
-		_cashExpiredInDays = 1;
-		_cashDataNotAllowed = false;
-		_data = {
-			dayRules: [],
-			holidays: [],
-			teamMembers: []
-		};
-
-		constructor(cashDataName) {
-			this._cashDataName = cashDataName;
-			this.readData();
-		}
-
-		readData() {
-			try {
-				let cashExpiredDateAsISOString;
-				try {
-					cashExpiredDateAsISOString = localStorage.getItem(this._cashDataExpiredName);
-					console.log("cashExpiredDateAsISOString", cashExpiredDateAsISOString);
-				} catch (e) {
-					console.error("Local storage data is permitted", e);
-					this._cashDataNotAllowed = true;
-					return;
-				}
-
-				let cashExpiredDate = this._cashExpiredDate;
-				if (cashExpiredDateAsISOString) {
-					cashExpiredDate = new Date(cashExpiredDateAsISOString);
-					console.log("cashExpiredDate", cashExpiredDate);
-				}
-				const now = new Date();
-				if (cashExpiredDate < now.addDays(-this._cashExpiredInDays)) {
-					console.log("cash has expired", cashExpiredDate, now, this._cashExpiredInDays);
-					this._hasCashedData = false;
-					return;
-				}
-
-				const cachedData = localStorage.getItem(this._cashDataName);
-				if (cachedData) {
-					this._hasCashedData = true;
-					this._data = JSON.parse(cachedData);
-				}
-			} catch (e) {
-				console.error("found error in readData()", e);
-			}
-		}
-
-		get cashData() {
-			return this._data;
-		}
-
-		set cashData(value) {
-			this._data = value;
-			if (!this._cashDataNotAllowed) {
-				localStorage.setItem(this._cashDataName, JSON.stringify(value));
-				this._cashExpiredDate = new Date();
-				localStorage.setItem(this._cashDataExpiredName, this._cashExpiredDate.toISOString());
-			}
-		}
-
-		get hasCashedData() {
-			return this._hasCashedData;
-		}
-	}
-
-	class SMLib {
-		_fetchUrl = 'https://script.google.com/macros/s/AKfycbwDmyGYn0W7UQPEiDiVzqv35qTigkn-RsGA0FdHNXsROchisP_6_Og0-DNHi0Z2kGsRnw/exec';
-		_isLoading = false;
-		_today = new Date();
-		constructor() {
-			this._storageData = new StorageData("scrumMasterCachedData");
-			this._isLoading = true;
-			fetch(this._fetchUrl)
-					.then(response => {
-						return response.text();
-					})
-					.then(text => {
-						this._isLoading = false;
-						const jsonData = JSON.parse(text.toString());
-						this._storageData.cashData = JSON.parse(JSON.stringify(jsonData));
-					})
-					.then(refresh)
-					.catch(error => console.error("Error:", error));
-		}
-
-		get today() {
-			return new Date(this._today);
-		}
-		
-		get data() {
-			return this._storageData.cashData;
-		}
-		
-		get isLoading() {
-			return this._isLoading;
-		}
-		
-		get isInitializing() {
-			return this._isLoading && !this.hasCashedData;
-		}
-
-		get hasCashedData() {
-			return this._storageData.hasCashedData;
-		}
-
-		get cashDataNotAllowed() {
-			return this._storageData.cashDataNotAllowed;
-		}
-
-		get dayRules() {
-			return (this.data.dayRules ? this.data.dayRules : [])
-					.map(item => ({
-						memberId: item.memberId,
-						type: item.type,
-						start: justDate(item.start),
-						end: justDate(item.end),
-						reason: item.reason
-					}));
-		}
-
-		get specialDays() {
-			return this.dayRules.filter(item => item.type === "Replacement");
-		}
-
-		get vacations() {
-			return this.dayRules.filter(item => item.type === "Vacation");
-		}
-
-		get holidays() {
-			return (this.data.holidays ? this.data.holidays : [])
-					.map(item => ({
-						date: justDate(item.date),
-						name: item.name
-					}));
-		}
-
-		get whosOut() {
-			return this.vacations
-					.filter(item => item.end >= addDays(this._today, -30) && item.start <= addDays(this._today, 60))
-					.map(item => (
-							{
-								start: item.start,
-								end: item.end,
-								memberId: item.memberId,
-								reason: item.reason,
-								status: isBetween(item.start, item.end, this._today)
-										? 0
-										: isFinished(item.end, this._today)
-												? -1 : 1
-							}
-					))
-					.sort((a, b) => a.status !== b.status ? a.status - b.status : a.start - b.start);
-		}
-		
-		get teamMembers() {
-			return (this.data.teamMembers ? this.data.teamMembers : [])
-					.filter(item => item.status === "Active")
-					.sort((a, b) => a.peekOrder - b.peekOrder)
-					.map(item => (
-							{
-								memberId: item.memberId,
-								name: item.name,
-								shortName: item.shortName,
-								status: item.status,
-								peekOrder: item.peekOrder,
-								dayBackup: item.dayBackup,
-								backupMembers: item.backupMembers && item.backupMembers.trim() !== ''
-										? item.backupMembers.split(',').map(m => m.trim())
-										: []
-							}));
-		}
-
-		get firstWeekTeamMembers() {
-			let memberIndex = 0;
-			const members = [];
-			const tempTeamMembers = [...this.teamMembers];
-			if (tempTeamMembers.length > 0) {
-				while (members.length < 5) {
-					const member = tempTeamMembers[memberIndex];
-					members.push(member.memberId)
-					if (member.dayBackup) {
-						memberIndex++;
-					} else {
-						tempTeamMembers.splice(memberIndex, 1);
-					}
-					if (memberIndex >= tempTeamMembers.length) {
-						memberIndex = 0;
-					}
-				}
-			}
-			return members;
-		}
-
-		get secondWeekTeamMembers() {
-			let memberIndex = 0;
-			const members = [];
-			const teamMembers = this.teamMembers;
-			if (teamMembers.length > 0) {
-				const firstWeekTeamMembers = this.firstWeekTeamMembers;
-				const restOfTeamMembers = teamMembers
-						.filter(member => !firstWeekTeamMembers.includes(member.memberId))
-						.concat(teamMembers
-								.filter(member => firstWeekTeamMembers.includes(member.memberId))
-								.filter(member => member.dayBackup)
-						);
-				const tempTeamMembers = [...restOfTeamMembers];
-				while (members.length < 5) {
-					const member = tempTeamMembers[memberIndex];
-					members.push(member.memberId)
-					if (member.dayBackup) {
-						memberIndex++;
-					} else {
-						tempTeamMembers.splice(memberIndex, 1);
-					}
-					if (memberIndex >= tempTeamMembers.length) {
-						memberIndex = 0;
-					}
-				}
-			}
-			return members;
-		}
-
-		getTeamMember(memberId) {
-			return this.teamMembers
-					.filter(item => item.memberId === memberId)[0];
-		}
-	}
-
 	const urlParams = new URLSearchParams(window.location.search);
 	const paramToday = urlParams.get('today');
 	const paramSleep = urlParams.get('sleep');
@@ -328,239 +51,24 @@
 		return new Promise(resolve => setTimeout(resolve, ms));
 	}
 
-	function getSpecialScrumMaster(date) {
-		for (let days of smLib.specialDays) {
-			if (date >= days.start && date < addDays(days.end, 1)) {
+	function getReplacementScrumMaster(date) {
+		for (let days of smLib.replacement) {
+			if (date >= days.start && date < days.end.addDays(1)) {
 				return days;
 			}
 		}
 		return null;
 	}
 
-	function isOnVacation(date, memberId) {
-		return smLib.vacations.some(v => v.memberId === memberId && date >= v.start && date < addDays(v.end, 1));
-	}
-
-	function currentHoliday(date) {
-		return smLib.holidays.filter(h => formatFullDate(h.date) === formatFullDate(date));
-	}
-
-	function isHoliday(date) {
-		const filter = currentHoliday(date);
-		return filter.length > 0;
-	}
-
-	function getHolidayName(date) {
-		return currentHoliday(date)[0].name;
-	}
-
-	function getFirstFreeBackup(date, memberId) {
-		const backupMembers = smLib.getTeamMember(memberId).backupMembers;
-		if (backupMembers.length > 0) {
-			for (let backupMemberId of backupMembers) {
-				if (!isOnVacation(date, backupMemberId)) {
-					return backupMemberId;
-				}
-			}
-		}
-		let seed = getDateSeed(date);
-		let shuffledTeamMembers = shuffleArray([...smLib.teamMembers], seed);
-		for (let member of shuffledTeamMembers) {
-			if (!isOnVacation(date, member.memberId)) {
-				return member.memberId;
-			}
-		}
-		return null;
-	}
-
-	function shuffleArray(array, seed) {
-		let currentIndex = array.length, temporaryValue, randomIndex;
-
-		function seededRandom() {
-			const x = Math.sin(seed++) * 10000;
-			return x - Math.floor(x);
-		}
-
-		while (0 !== currentIndex) {
-
-			randomIndex = Math.floor(seededRandom() * currentIndex);
-			currentIndex -= 1;
-
-			temporaryValue = array[currentIndex];
-			array[currentIndex] = array[randomIndex];
-			array[randomIndex] = temporaryValue;
-		}
-
-		return array;
-	}
-
-	function getDateSeed(date) {
-		return date.getFullYear() * 10000 + (date.getMonth() + 1) * 100 + date.getDate();
-	}
-
-	function generateWeeks(weekIndex, selector, today, teamMembers, firstMonday, isActiveWeek) {
-		updateTitleWithWeekNumber(weekIndex, selector + "Title", firstMonday, isActiveWeek);
-		
-		const todayDay = today.getDay();
-		const dayElement = document.querySelector(selector);
-		dayElement.innerHTML = "";
-
-		for (let i = 0; i < daysOfWeek().length - 2; i++) {
-			const currentDay = addDays(firstMonday, i, todayDay);
-			let text = getDayOfWeek(i).substring(0, 3);
-			if (isHoliday(currentDay)) {
-				text = `<span class="disabled">${text} - ${getHolidayName(currentDay)}</span>`;
-			} else {
-				const specialScrumMaster = getSpecialScrumMaster(currentDay);
-				let scrumMasterId = teamMembers[i];
-				if (specialScrumMaster != null) {
-					scrumMasterId = specialScrumMaster.memberId;
-				}
-				if (isOnVacation(currentDay, scrumMasterId)) {
-					scrumMasterId = getFirstFreeBackup(currentDay, scrumMasterId);
-				}
-				const scrumMaster = smLib.getTeamMember(scrumMasterId)
-				let scrumMasterName;
-				if (scrumMaster) {
-					scrumMasterName = scrumMaster.name;
-				} else if (smLib.isInitializing) {
-					scrumMasterName = "initializing...";
-				} else {
-					scrumMasterName = "Unknown";
-				}
-				
-				text += ` - ${scrumMasterName}`;
-
-				if (isActiveWeek && todayDay === (i + 1)) {
-					text = `<b class="current-scrum-master">${text}</b>`;
-				} else if (isFinished(currentDay, today)) {
-					text = `<s class="completed">${text}</s>`;
-				}
-			}
-
-			dayElement.innerHTML += `${text}<br>`;
-		}
-	}
-
-	function updateTitleWithWeekNumber(weekIndex, selector, firstDay, isActiveWeek) {
-		const lastDay = addDays(firstDay, 4);
-		const titleElement = document.querySelector(selector);
-		titleElement.style.fontWeight = isActiveWeek ? 'bold' : 'normal';
-		titleElement.innerHTML = `${weekIndex}. Week ${formatDate(firstDay)}-${formatDate(lastDay)}`;
-	}
-
-	function updateWhosOut() {
-		const whosOutElement = document.querySelector("#whosOut");
-		if (smLib.isInitializing) {
-			whosOutElement.innerHTML = "initializing...";
-		} else {
-			let innerHTML = '<ul>';
-			for (let item of smLib.whosOut) {
-				let itemHTML = smLib.getTeamMember(item.memberId).shortName;
-				itemHTML += "&nbsp;";
-				itemHTML += formatDatePeriod(item.start, item.end);
-				if (item.status === 0) {
-					innerHTML += `<li class="current">${itemHTML}</li>`;
-				} else if (item.status < 0) {
-					innerHTML += `<li class="completed">${itemHTML}</li>`;
-				} else {
-					innerHTML += `<li class="normal">${itemHTML}</li>`;
-				}
-			}
-			innerHTML += "</ul>";
-			whosOutElement.innerHTML = innerHTML;
-		}
-	}
-
-	function isBetween(start, end, today) {
-		return start <= today && addDays(end, 1) > today;
-	}
-
-	function isFinished(end, today) {
-		return end < today;
-	}
-
-	function formatDatePeriod(start, end) {
-		if (formatDate(start) === formatDate(end)) {
-			return formatDate(start);
-		}
-		return `${formatDate(start)}-${formatDate(end)}`;
-	}
-
-	function formatDate(date) {
-		const day = String(date.getDate()).padStart(2, '0');
-		const month = String(date.getMonth() + 1).padStart(2, '0');
-		return `${day}.${month}`;
-	}
-	
-	function formatFullDate(date) {
-		const day = String(date.getDate()).padStart(2, '0');
-		const month = String(date.getMonth() + 1).padStart(2, '0');
-		const year = String(date.getFullYear() + 1).padStart(4, '0');
-		return `${year}-${month}-${day}`;
-	}
-
-	function updateToday(date) {
+	function updateToday() {
 		const todayElement = document.querySelector("#today");
-		todayElement.innerHTML = `${formatDate(date)}.${date.getFullYear()} - ${getDayOfWeek((date.getDay() + 6) % 7)}`;
-	}
-
-	function justDate(date) {
-		const d = new Date(date);
-		d.setHours(0, 0, 0, 0);
-		return d;
-	}
-
-	function getMonday(d) {
-		const date = new Date(d);
-		const day = date.getDay();
-		const diff = date.getDate() - day + (day === 0 ? -6 : 1);
-		return new Date(date.setDate(diff));
-	}
-
-	function CurrentWeekNumberFromFixedDate(date) {
-		return Math.ceil((date - new Date(2023, 0, 2)) / 604800000);
-	}
-
-	function IsFirstWeekCurrentWeek(date) {
-		return CurrentWeekNumberFromFixedDate(date) % 2 === 0;
-	}
-
-	function addDays(date, days) {
-		const newDate = new Date(date);
-		newDate.setDate(newDate.getDate() + days);
-		return newDate;
-	}
-
-	function getDayOfWeek(day) {
-		return daysOfWeek()[day];
-	}
-
-	function daysOfWeek() {
-		return ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+		const today = smLib.today;
+		todayElement.innerHTML = `${formatDayMonth(today)}.${today.getFullYear()} - ${getDayOfWeek((today.getDay() + 6) % 7)}`;
+		updateStatusIndicator();
 	}
 	
-	function nonWorkingDay(date) {
-		return date.getDay() === 6 || date.getDay() === 0;
-	}
-
-	function refresh() {
+	function updateStatusIndicator() {
 		const statusIndicator = document.getElementById('statusIndicator');
-
-		const isFirstWeekCurrentWeek = IsFirstWeekCurrentWeek(smLib.today);
-		const isSecondWeekCurrentWeek = !isFirstWeekCurrentWeek;
-
-		const thisMonday = getMonday(smLib.today);
-		const firstMonday = isFirstWeekCurrentWeek ? new Date(thisMonday) : addDays(thisMonday, -7);
-		const secondMonday = isSecondWeekCurrentWeek ? new Date(thisMonday) : addDays(thisMonday, 7)
-
-		updateToday(smLib.today);
-
-		generateWeeks(1, "#firstWeek", smLib.today, smLib.firstWeekTeamMembers, firstMonday, isFirstWeekCurrentWeek);
-		generateWeeks(2, "#secondWeek", smLib.today, smLib.secondWeekTeamMembers, secondMonday, isSecondWeekCurrentWeek);
-
-		updateWhosOut();
-
 		if (smLib.isLoading) {
 			if (smLib.hasCashedData) {
 				statusIndicator.innerHTML = '<i class="fas fa-wifi"></i>';
@@ -572,23 +80,124 @@
 			statusIndicator.innerHTML = '<i class="fas fa-check"></i>';
 			setTimeout(removeStatusIndicator, 5000);
 		}
-		
+
 		if (smLib.cashDataNotAllowed) {
 			statusIndicator.innerHTML += '&nbsp;<i class="fas fa-exclamation-triangle"></i>'
 		}
-		if (nonWorkingDay(smLib.today)) {
+		if (smLib.today.nonWorkingDay()) {
 			statusIndicator.innerHTML += '&nbsp;<i class="fas fa-bed"></i>'
 		}
-		if (isHoliday(smLib.today)) {
+		if (smLib.isHoliday(smLib.today)) {
 			statusIndicator.innerHTML += '&nbsp;<i class="fas fa-gift"></i>'
 		}
 	}
-	
+
 	function removeStatusIndicator() {
 		const statusIndicator = document.getElementById('statusIndicator');
 		if (statusIndicator) {
 			statusIndicator.innerHTML = statusIndicator.innerHTML.replace('<i class=\"fas fa-check\"></i>', '');
 		}
+	}
+
+	function generateWeeks(weekIndex, selector, firstMonday, isActiveWeek) {
+		updateTitleWithWeekNumber(weekIndex, selector + "Title", firstMonday, isActiveWeek);
+
+		const workDaysOfWeek = daysOfWeek().length - 2;
+		
+		const dayElement = document.querySelector(selector);
+		dayElement.innerHTML = "";
+
+		for (let i = 0; i < workDaysOfWeek; i++) {
+			const currentDate = firstMonday.addDays(i);
+			let text = getDayOfWeek(i).substring(0, 3);
+			if (smLib.isHoliday(currentDate)) {
+				text = `<span class="disabled">${text} - ${smLib.getHolidayName(currentDate)}</span>`;
+			} else {
+				text += ` - ${smLib.getScrumMasterName(currentDate, (weekIndex - 1) * workDaysOfWeek + i)}`;
+				if (smLib.isToday(currentDate)) {
+					text = `<b class="current-scrum-master">${text}</b>`;
+				} else if (smLib.isFinished(currentDate)) {
+					text = `<s class="completed">${text}</s>`;
+				}
+			}
+
+			dayElement.innerHTML += `${text}<br>`;
+		}
+	}
+
+	function updateTitleWithWeekNumber(weekIndex, selector, firstDay, isActiveWeek) {
+		const lastDay = firstDay.addDays(4);
+		const titleElement = document.querySelector(selector);
+		titleElement.style.fontWeight = isActiveWeek ? 'bold' : 'normal';
+		titleElement.innerHTML = `${weekIndex}. Week ${formatDayMonth(firstDay)}-${formatDayMonth(lastDay)}`;
+	}
+
+	function updateWhosOut() {
+		const whosOutElement = document.querySelector("#whosOut");
+		if (smLib.isInitializing) {
+			whosOutElement.innerHTML = "initializing...";
+		} else {
+			let innerHTML = '<ul>';
+			for (let item of smLib.whosOut) {
+				let itemClass;
+				if (item.status === 0) {
+					itemClass = "current";
+				} else if (item.status < 0) {
+					itemClass = "completed";
+				} else {
+					itemClass = "normal";
+				}
+				
+				const shortName = smLib.getTeamMember(item.memberId).shortName;
+				let whosItem = `${shortName}&nbsp;${formatDatePeriod(item.start, item.end)}`;
+				innerHTML += `<li class="${itemClass}">${whosItem}</li>`;
+			}
+			innerHTML += "</ul>";
+			whosOutElement.innerHTML = innerHTML;
+		}
+	}
+
+	function formatDatePeriod(start, end) {
+		if (formatDayMonth(start) === formatDayMonth(end)) {
+			return formatDayMonth(start);
+		}
+		return `${formatDayMonth(start)}-${formatDayMonth(end)}`;
+	}
+
+	function formatDayMonth(date) {
+		const day = String(date.getDate()).padStart(2, '0');
+		const month = String(date.getMonth() + 1).padStart(2, '0');
+		return `${day}.${month}`;
+	}
+
+	function CurrentWeekNumberFromFixedDate(date) {
+		return Math.ceil((date - new Date(2023, 0, 2)) / 604800000);
+	}
+
+	function IsFirstWeekCurrentWeek(date) {
+		return CurrentWeekNumberFromFixedDate(date) % 2 === 0;
+	}
+
+	function getDayOfWeek(day) {
+		return daysOfWeek()[day];
+	}
+
+	function daysOfWeek() {
+		return ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+	}
+
+	function refresh() {
+		const isFirstWeekCurrentWeek = IsFirstWeekCurrentWeek(smLib.today);
+		const isSecondWeekCurrentWeek = !isFirstWeekCurrentWeek;
+
+		const thisMonday = smLib.today.getPreviousMonday();
+		const firstMonday = isFirstWeekCurrentWeek ? new Date(thisMonday) : thisMonday.addDays(-7);
+		const secondMonday = isSecondWeekCurrentWeek ? new Date(thisMonday) : thisMonday.addDays(7);
+
+		updateToday();
+		generateWeeks(1, "#firstWeek", firstMonday, isFirstWeekCurrentWeek);
+		generateWeeks(2, "#secondWeek", secondMonday, isSecondWeekCurrentWeek);
+		updateWhosOut();
 	}
 
 	refresh();

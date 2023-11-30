@@ -1,0 +1,41 @@
+﻿body {
+    font-family: 'Segoe UI', Tahoma, Helvetica, Sans-Serif, sans-serif;
+    font-size: 12px;
+}
+
+h5 {
+    font-size: 14px;
+    margin-top: 5px;
+    margin-bottom: 2px;
+    background: linear-gradient(to right, #e3eaed, transparent);
+}
+
+tr td:first-child {
+    text-align: center;
+}
+
+ul {
+    padding-left: 2em;
+    margin-top: 2px;
+}
+
+.normal {
+}
+
+.current {
+    font-weight: bold;
+}
+
+.current-scrum-master {
+    color: darkgreen;
+    font-weight: 900;
+}
+
+.completed {
+    text-decoration: line-through;
+    color: grey;
+}
+
+.disabled {
+    color: darkred;
+}
