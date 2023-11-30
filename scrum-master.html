@@ -70,28 +70,87 @@
 	</tr>
 </table>
 <script>
-	class SMLib {
+	Date.prototype.addDays = function(days) {
+		const date = new Date(this.valueOf());
+		date.setDate(date.getDate() + days);
+		return date;
+	}
+
+	class StorageData {
 		_cashDataName = "scrumMasterCachedData";
-		_fetchUrl = 'https://script.google.com/macros/s/AKfycbwDmyGYn0W7UQPEiDiVzqv35qTigkn-RsGA0FdHNXsROchisP_6_Og0-DNHi0Z2kGsRnw/exec';
+		_cashDataExpiredName = "scrumMasterCachedDataExpired";
+		_cashExpiredDate = new Date();
+		_cashExpiredInDays = 1;
+		_cashDataNotAllowed = false;
 		_data = {
 			dayRules: [],
 			holidays: [],
 			teamMembers: []
 		};
-		_hasCashedData = false;
-		_cashDataNotAllowed = false;
-		_isLoading = false;
-		_today = new Date();
-		constructor() {
+
+		constructor(cashDataName) {
+			this._cashDataName = cashDataName;
+			this.readData();
+		}
+
+		readData() {
 			try {
+				let cashExpiredDateAsISOString;
+				try {
+					cashExpiredDateAsISOString = localStorage.getItem(this._cashDataExpiredName);
+					console.log("cashExpiredDateAsISOString", cashExpiredDateAsISOString);
+				} catch (e) {
+					console.error("Local storage data is permitted", e);
+					this._cashDataNotAllowed = true;
+					return;
+				}
+
+				let cashExpiredDate = this._cashExpiredDate;
+				if (cashExpiredDateAsISOString) {
+					cashExpiredDate = new Date(cashExpiredDateAsISOString);
+					console.log("cashExpiredDate", cashExpiredDate);
+				}
+				const now = new Date();
+				if (cashExpiredDate < now.addDays(-this._cashExpiredInDays)) {
+					console.log("cash has expired", cashExpiredDate, now, this._cashExpiredInDays);
+					this._hasCashedData = false;
+					return;
+				}
+
 				const cachedData = localStorage.getItem(this._cashDataName);
 				if (cachedData) {
 					this._hasCashedData = true;
 					this._data = JSON.parse(cachedData);
 				}
 			} catch (e) {
-				this._cashDataNotAllowed = true;
+				console.error("found error in readData()", e);
 			}
+		}
+
+		get cashData() {
+			return this._data;
+		}
+
+		set cashData(value) {
+			this._data = value;
+			if (!this._cashDataNotAllowed) {
+				localStorage.setItem(this._cashDataName, JSON.stringify(value));
+				this._cashExpiredDate = new Date();
+				localStorage.setItem(this._cashDataExpiredName, this._cashExpiredDate.toISOString());
+			}
+		}
+
+		get hasCashedData() {
+			return this._hasCashedData;
+		}
+	}
+
+	class SMLib {
+		_fetchUrl = 'https://script.google.com/macros/s/AKfycbwDmyGYn0W7UQPEiDiVzqv35qTigkn-RsGA0FdHNXsROchisP_6_Og0-DNHi0Z2kGsRnw/exec';
+		_isLoading = false;
+		_today = new Date();
+		constructor() {
+			this._storageData = new StorageData("scrumMasterCachedData");
 			this._isLoading = true;
 			fetch(this._fetchUrl)
 					.then(response => {
@@ -100,37 +159,38 @@
 					.then(text => {
 						this._isLoading = false;
 						const jsonData = JSON.parse(text.toString());
-						this._data = JSON.parse(JSON.stringify(jsonData));
-						if (!this._cashDataNotAllowed) {
-							localStorage.setItem(this._cashDataName, JSON.stringify(jsonData));
-						}
+						this._storageData.cashData = JSON.parse(JSON.stringify(jsonData));
 					})
 					.then(refresh)
 					.catch(error => console.error("Error:", error));
 		}
-		
+
 		get today() {
 			return new Date(this._today);
 		}
-
+		
+		get data() {
+			return this._storageData.cashData;
+		}
+		
 		get isLoading() {
 			return this._isLoading;
 		}
 		
 		get isInitializing() {
-			return this._isLoading && !this._hasCashedData;
+			return this._isLoading && !this.hasCashedData;
 		}
 
 		get hasCashedData() {
-			return this._hasCashedData;
+			return this._storageData.hasCashedData;
 		}
-		
+
 		get cashDataNotAllowed() {
-			return this._cashDataNotAllowed;
+			return this._storageData.cashDataNotAllowed;
 		}
-		
+
 		get dayRules() {
-			return (this._data.dayRules ? this._data.dayRules : [])
+			return (this.data.dayRules ? this.data.dayRules : [])
 					.map(item => ({
 						memberId: item.memberId,
 						type: item.type,
@@ -149,7 +209,7 @@
 		}
 
 		get holidays() {
-			return (this._data.holidays ? this._data.holidays : [])
+			return (this.data.holidays ? this.data.holidays : [])
 					.map(item => ({
 						date: justDate(item.date),
 						name: item.name
@@ -175,7 +235,7 @@
 		}
 		
 		get teamMembers() {
-			return (this._data.teamMembers ? this._data.teamMembers : [])
+			return (this.data.teamMembers ? this.data.teamMembers : [])
 					.filter(item => item.status === "Active")
 					.sort((a, b) => a.peekOrder - b.peekOrder)
 					.map(item => (
@@ -280,12 +340,11 @@
 	function isOnVacation(date, memberId) {
 		return smLib.vacations.some(v => v.memberId === memberId && date >= v.start && date < addDays(v.end, 1));
 	}
-	
-	
+
 	function currentHoliday(date) {
 		return smLib.holidays.filter(h => formatFullDate(h.date) === formatFullDate(date));
 	}
-	
+
 	function isHoliday(date) {
 		const filter = currentHoliday(date);
 		return filter.length > 0;
@@ -294,7 +353,7 @@
 	function getHolidayName(date) {
 		return currentHoliday(date)[0].name;
 	}
-	
+
 	function getFirstFreeBackup(date, memberId) {
 		const backupMembers = smLib.getTeamMember(memberId).backupMembers;
 		if (backupMembers.length > 0) {
