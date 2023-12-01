@@ -32,30 +32,39 @@
 <script src="lib/SMLib.js"></script>
 <script>
 	const urlParams = new URLSearchParams(window.location.search);
+	const jb_debug = urlParams.get("_ij_reload");
 	const paramToday = urlParams.get('today');
 	const paramSleep = urlParams.get('sleep');
 
-	let smLib = new SMLib();
+	let smLib = new SMLib(refresh);
 
 	if (paramToday) {
-		if ([" ", "+", "-"].includes(paramToday[0]) && isValidNumber(paramToday)) {
+		if ([" ", "+", "-", "0"].includes(paramToday[0]) && isValidNumber(paramToday)) {
 			smLib.today = smLib.today.addDays(parseInt(paramToday));
-		}
-		else if (isValidDate(paramToday)) {
+		} else if (isValidDate(paramToday)) {
 			smLib.today = new Date(paramToday);
 		}
+		console.log("paramToday", smLib.today);
 	}
+
+	if (paramSleep) {
+		smLib._sleep = parseInt(paramSleep);
+		console.log("paramSleep", smLib._sleep);
+	}
+
+	if (jb_debug && jb_debug === "RELOAD_ON_SAVE") {
+		smLib._isDebug = true;
+		console.log("isDebug", smLib._isDebug);
+	}
+
+	smLib.startRefresh();
 
 	function isValidNumber(numberAsString) {
 		return !isNaN(parseInt(numberAsString));
 	}
-	
+
 	function isValidDate(dateAsString) {
 		return !isNaN(Date.parse(dateAsString))
-	}
-
-	function sleep(ms) {
-		return new Promise(resolve => setTimeout(resolve, ms));
 	}
 
 	function getReplacementScrumMaster(date) {
@@ -73,7 +82,7 @@
 		todayElement.innerHTML = `${formatDayMonth(today)}.${today.getFullYear()} - ${getDayOfWeek((today.getDay() + 6) % 7)}`;
 		updateStatusIndicator();
 	}
-	
+
 	function updateStatusIndicator() {
 		const statusIndicator = document.getElementById('statusIndicator');
 		if (smLib.isLoading) {
@@ -122,7 +131,7 @@
 					text = `<s class="completed">${text}</s>`;
 				} else if (smLib.isToday(currentDate)) {
 					text = `<b class="current-scrum-master">${text}</b>`;
-				} 
+				}
 			}
 
 			innerHTML += `${text}<br>`;
@@ -152,7 +161,7 @@
 				} else {
 					itemClass = "normal";
 				}
-				
+
 				const shortName = smLib.getTeamMember(item.memberId).shortName;
 				let whosItem = `${shortName}&nbsp;${formatDatePeriod(item.start, item.end)}`;
 				innerHTML += `<li class="${itemClass}">${whosItem}</li>`;
@@ -204,8 +213,6 @@
 		generateWeeks(2, "#secondWeek", secondMonday, isSecondWeekCurrentWeek);
 		updateWhosOut();
 	}
-
-	refresh();
 </script>
 </body>
 </html>
