@@ -1,0 +1,69 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>Test</title>
+<body>
+	<p>Just testing bamboo fetching</p>
+<script>
+	const _fetchUrl = 'https://invendagroup.bamboohr.com/feeds/feed.php?id=66caee3273c3196f24c4104f8cbb960a';
+	fetchAndParseVCalendar()
+			.then(vacations => {
+				console.log("Bamboo whos out:", vacations);
+			})
+			.catch(error => {
+				console.error("Bamboo error:", error);
+			});
+
+	async function fetchAndParseVCalendar() {
+		console.log("_fetchUrl", _fetchUrl);
+		const response = await fetch(_fetchUrl);
+		const text = await response.text();
+		console.log("fetch bamboo", response, text);
+		const events = parseVCalendarData(text);
+
+		return events.map(event => {
+			return {
+				start: event.start,
+				end: event.end,
+				memberId: event.memberId,
+				reason: event.summary,
+				approved: true // Ako je potrebno dodatno proveriti
+			};
+		});
+	}
+	
+	function parseVCalendarData(data) {
+		const events = [];
+		const lines = data.split("\n");
+
+		let currentEvent = {};
+		lines.forEach(line => {
+			if (line.startsWith("BEGIN:VEVENT")) {
+				currentEvent = {};
+			} else if (line.startsWith("END:VEVENT")) {
+				events.push(currentEvent);
+			} else {
+				const [key, value] = line.split(":");
+				switch (key) {
+					case 'DTSTART':
+						currentEvent.start = value;
+						break;
+					case 'DTEND':
+						currentEvent.end = value;
+						break;
+					case 'UID':
+						currentEvent.memberId = value;
+						break;
+					case 'SUMMARY':
+						currentEvent.reason = value;
+						break;
+				}
+			}
+		});
+
+		return events;
+	}
+
+</script>
+</body>
+</html>
