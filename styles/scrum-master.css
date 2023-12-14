@@ -39,3 +39,7 @@ ul {
 .disabled {
     color: darkred;
 }
+
+.waiting {
+    color: darkgrey;
+}

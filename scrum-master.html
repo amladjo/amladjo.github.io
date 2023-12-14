@@ -4,7 +4,9 @@
 	<title>Scrum Master</title>
 	<link rel="stylesheet" type="text/css" href="styles\scrum-master.css">
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
-</head>
+	<script src="lib/dateExtensions.js"></script>
+	<script src="lib/StorageData.js"></script>
+	<script src="lib/SMLib.js"></script></head>
 <body>
 <table style="width:100%;">
 	<tr>
@@ -14,7 +16,7 @@
 		</td>
 	</tr>
 	<tr>
-		<td style="text-align: left; width: 48%;">
+		<td style="vertical-align: top; text-align: left; width: 48%;">
 			<h5 id="firstWeekTitle">1.</h5>
 			<div id="firstWeek"></div>
 			<h5 id="secondWeekTitle">2.</h5>
@@ -27,9 +29,6 @@
 		</td>
 	</tr>
 </table>
-<script src="lib/dateExtensions.js"></script>
-<script src="lib/StorageData.js"></script>
-<script src="lib/SMLib.js"></script>
 <script>
 	const urlParams = new URLSearchParams(window.location.search);
 	const jb_debug = urlParams.get("_ij_reload");
@@ -154,6 +153,9 @@
 			let innerHTML = '<ul>';
 			for (let item of smLib.whosOut) {
 				let itemClass;
+				if (item.approved === "no") {
+					itemClass = "waiting";
+				}
 				if (item.status === 0) {
 					itemClass = "current";
 				} else if (item.status < 0) {
