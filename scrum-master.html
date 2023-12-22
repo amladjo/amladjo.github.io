@@ -24,7 +24,7 @@
 		</td>
 		<td style="width: 2%;">&nbsp;</td>
 		<td style="vertical-align: top; width: 50%;">
-			<h5><i class="fas fa-calendar-check"></i>&nbsp;Who's Out</h5>
+			<h5 class="calendar">Who's Out</h5>
 			<div id="whosOut"></div>
 		</td>
 	</tr>
@@ -153,20 +153,20 @@
 			let innerHTML = '<ul>';
 			for (let item of smLib.whosOut) {
 				let itemClass;
-				if (item.approved === "no") {
+				if (!item.approved) {
 					itemClass = "waiting";
 				}
 				if (item.status === 0) {
-					itemClass = "current";
+					itemClass += " current";
 				} else if (item.status < 0) {
-					itemClass = "completed";
+					itemClass += " completed";
 				} else {
-					itemClass = "normal";
+					itemClass += " normal";
 				}
 
 				const shortName = smLib.getTeamMember(item.memberId).shortName;
 				let whosItem = `${shortName}&nbsp;${formatDatePeriod(item.start, item.end)}`;
-				innerHTML += `<li class="${itemClass}">${whosItem}</li>`;
+				innerHTML += `<li class="${itemClass}" title="${item.reason}">${whosItem}</li>`;
 			}
 			innerHTML += "</ul>";
 			whosOutElement.innerHTML = innerHTML;
