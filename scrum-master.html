@@ -167,7 +167,8 @@
 					itemClass += " normal";
 				}
 
-				const shortName = smLib.getTeamMember(item.memberId).shortName;
+				const teamMember = smLib.getTeamMember(item.memberId);
+				const shortName = teamMember ? teamMember.shortName : item.memberId;
 				let whosItem = `${shortName}&nbsp;${formatDatePeriod(item.start, item.end)}`;
 				innerHTML += `<li class="${itemClass}" title="${item.reason}">${whosItem}</li>`;
 			}
