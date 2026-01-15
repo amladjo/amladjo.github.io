@@ -126,7 +126,7 @@
 		for (let i = 0; i < workDaysOfWeek; i++) {
 			const currentDate = firstMonday.addDays(i);
 			let text = getDayOfWeek(i).substring(0, 3);
-			if (smLib.isHoliday(currentDate)) {
+			if (smLib.isHolidayForAllTeamMembers(currentDate)) {
 				text = `<span class="disabled">${text} - ${smLib.getHolidayName(currentDate)}</span>`;
 			} else {
 				text += ` - ${smLib.getScrumMasterName(currentDate, (weekIndex - 1) * workDaysOfWeek + i)}`;
