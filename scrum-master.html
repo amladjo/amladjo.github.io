@@ -44,7 +44,9 @@
 		if ([" ", "+", "-", "0"].includes(paramToday[0]) && isValidNumber(paramToday)) {
 			smLib.today = smLib.today.addDays(parseInt(paramToday));
 		} else if (isValidDate(paramToday)) {
-			smLib.today = new Date(paramToday);
+			const today = new Date(paramToday);
+			today.setHours(0,0,0,0);
+			smLib.today = today;
 		}
 		console.log("paramToday", smLib.today);
 	}
@@ -127,7 +129,7 @@
 			const currentDate = firstMonday.addDays(i);
 			let text = getDayOfWeek(i).substring(0, 3);
 			if (smLib.isHolidayForAllTeamMembers(currentDate)) {
-				text = `<span class="disabled">${text} - ${smLib.getHolidayName(currentDate)}</span>`;
+				text = `<span class="disabled">${text} - ${smLib.getAllHolidayName(currentDate)}</span>`;
 			} else {
 				text += ` - ${smLib.getScrumMasterName(currentDate, (weekIndex - 1) * workDaysOfWeek + i)}`;
 				if (smLib.isBeforeToday(currentDate)) {
